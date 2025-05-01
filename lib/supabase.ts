@@ -1,9 +1,11 @@
-import { createClient } from "@supabase/supabase-js"
+import { createClient as createClientBase } from "@supabase/supabase-js"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+export function createClient() {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ""
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+  return createClientBase(supabaseUrl, supabaseKey)
+}
 
 // Kullanıcı tipi
 export type User = {

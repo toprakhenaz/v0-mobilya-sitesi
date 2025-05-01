@@ -1,159 +1,157 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { X, User, ShoppingBag, FileText, Facebook, Instagram, Youtube, Linkedin, Rss } from "lucide-react"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
-// Import the CategoriesMenu component
-import CategoriesMenu from "./categories-menu"
+import { usePathname } from "next/navigation"
+import { X, ChevronRight, LogOut } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
+import { useCart } from "@/contexts/cart-context"
 
 interface MobileMenuProps {
   isOpen: boolean
   onClose: () => void
 }
 
-const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
-  const [activeTab, setActiveTab] = useState<"main" | "categories" | "info">("main")
+export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
+  const pathname = usePathname()
+  const { user, signOut } = useAuth()
+  const { cartItems } = useCart()
+  const [mounted, setMounted] = useState(false)
+
+  // Calculate total quantity of items in cart
+  const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return null
+  }
 
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="left" className="w-[85vw] p-0">
-        <SheetHeader className="border-b p-4 flex flex-row justify-between items-center">
-          <SheetTitle className="text-left">Divona Home</SheetTitle>
-          <SheetClose className="rounded-full h-8 w-8 flex items-center justify-center">
-            <X className="h-5 w-5" />
-          </SheetClose>
-        </SheetHeader>
-
-        {activeTab === "main" && (
-          <div className="flex flex-col">
-            <Link href="/uye-ol" className="flex items-center gap-3 p-4 border-b">
-              <User className="h-5 w-5 text-green-500" />
-              <span>Üye Ol / Giriş Yap</span>
-            </Link>
-            <Link href="/sepet" className="flex items-center gap-3 p-4 border-b">
-              <div className="relative">
-                <ShoppingBag className="h-5 w-5 text-green-500" />
-                <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                  0
-                </span>
-              </div>
-              <span>Sepet</span>
-            </Link>
-            <Link href="/siparis-takibi" className="flex items-center gap-3 p-4 border-b">
-              <FileText className="h-5 w-5 text-green-500" />
-              <span>Sipariş Takibi</span>
-            </Link>
-
-            <Link href="/proje-urunler" className="p-4 bg-yellow-400 text-center font-medium">
-              Proje Ürünler
-            </Link>
-            <Link href="/garage-sale" className="p-4 bg-green-500 text-white text-center font-medium">
-              Garage Sale
-            </Link>
-
-            {/* Replace the duplicated categories section with: */}
-            <CategoriesMenu mobileView={true} />
-          </div>
-        )}
-
-        {activeTab === "categories" && (
-          <div className="flex flex-col">
-            <div className="p-4 border-b">
-              <h2 className="font-medium mb-2">Bahçe Üçlü Koltuklar</h2>
-            </div>
-            <Link href="/hakkimizda" className="flex items-center gap-3 p-4 border-b">
-              <ShoppingBag className="h-5 w-5 text-green-500" />
-              <span>Hakkımızda</span>
-            </Link>
-            <Link href="/sikca-sorulan-sorular" className="flex items-center gap-3 p-4 border-b">
-              <FileText className="h-5 w-5 text-green-500" />
-              <span>Sıkça Sorulan Sorular</span>
-            </Link>
-            <Link href="/siparis-takibi" className="flex items-center gap-3 p-4 border-b">
-              <FileText className="h-5 w-5 text-green-500" />
-              <span>Sipariş Takibi</span>
-            </Link>
-            <Link href="/iletisim" className="flex items-center gap-3 p-4 border-b">
-              <FileText className="h-5 w-5 text-green-500" />
-              <span>İletişim</span>
-            </Link>
-            <Link href="/mimarlik-hizmeti" className="flex items-center gap-3 p-4 border-b">
-              <FileText className="h-5 w-5 text-green-500" />
-              <span>Mimarlık Hizmeti</span>
-            </Link>
-            <Link href="/showroomlar" className="flex items-center gap-3 p-4 border-b">
-              <FileText className="h-5 w-5 text-green-500" />
-              <span>Showroomlar</span>
-            </Link>
-            <Link href="/basin" className="flex items-center gap-3 p-4 border-b">
-              <FileText className="h-5 w-5 text-green-500" />
-              <span>Basın</span>
-            </Link>
-            <Link href="/blog" className="flex items-center gap-3 p-4 border-b">
-              <FileText className="h-5 w-5 text-green-500" />
-              <span>Blog</span>
-            </Link>
-            <Link href="/diger" className="flex items-center gap-3 p-4 border-b">
-              <FileText className="h-5 w-5 text-green-500" />
-              <span>Diğer</span>
-            </Link>
-
-            <button onClick={() => setActiveTab("main")} className="p-4 text-green-500 text-center font-medium">
-              Geri
-            </button>
-          </div>
-        )}
-
-        {activeTab === "info" && (
-          <div className="flex flex-col">
-            <div className="p-4 border-b">
-              <h2 className="font-medium mb-2">Diğer Sayfalar</h2>
-            </div>
-            <Link href="/hakkimizda" className="p-4 border-b">
-              Hakkımızda
-            </Link>
-            <Link href="/sikca-sorulan-sorular" className="p-4 border-b">
-              Sıkça Sorulan Sorular
-            </Link>
-            <Link href="/iletisim" className="p-4 border-b">
-              İletişim
-            </Link>
-            <Link href="/mimarlik-hizmeti" className="p-4 border-b">
-              Mimarlık Hizmeti
-            </Link>
-            <Link href="/showroomlar" className="p-4 border-b">
-              Showroomlar
-            </Link>
-
-            <button onClick={() => setActiveTab("main")} className="p-4 text-green-500 text-center font-medium">
-              Geri
-            </button>
-          </div>
-        )}
-
-        <div className="absolute bottom-0 left-0 right-0 border-t">
-          <div className="flex justify-center space-x-4 p-4">
-            <Link href="https://facebook.com" className="text-blue-600">
-              <Facebook size={20} />
-            </Link>
-            <Link href="https://instagram.com" className="text-pink-600">
-              <Instagram size={20} />
-            </Link>
-            <Link href="https://youtube.com" className="text-red-600">
-              <Youtube size={20} />
-            </Link>
-            <Link href="https://linkedin.com" className="text-blue-700">
-              <Linkedin size={20} />
-            </Link>
-            <Link href="/rss" className="text-orange-500">
-              <Rss size={20} />
-            </Link>
-          </div>
+    <div
+      className={`fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity duration-300 ${
+        isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+      }`}
+      onClick={onClose}
+    >
+      <div
+        className={`fixed top-0 right-0 h-full w-4/5 max-w-sm bg-white shadow-xl transform transition-transform duration-300 flex flex-col ${
+          isOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-center p-4 border-b">
+          <h2 className="text-lg font-bold">Menü</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <X className="h-6 w-6" />
+          </button>
         </div>
-      </SheetContent>
-    </Sheet>
+
+        <div className="flex-1 overflow-y-auto">
+          <nav className="flex flex-col h-full">
+            <div className="flex-1">
+              <Link
+                href="/"
+                className={`flex justify-between items-center p-4 border-b ${
+                  pathname === "/" ? "text-primary" : "text-gray-800"
+                }`}
+                onClick={onClose}
+              >
+                <span>Tüm Ürünler</span>
+                <ChevronRight className="h-5 w-5" />
+              </Link>
+              <Link
+                href="/kampanyali-urunler"
+                className={`flex justify-between items-center p-4 border-b ${
+                  pathname === "/kampanyali-urunler" ? "text-primary" : "text-gray-800"
+                }`}
+                onClick={onClose}
+              >
+                <span>Kampanyalı Ürünler</span>
+                <ChevronRight className="h-5 w-5" />
+              </Link>
+              {user && (
+                <>
+                  <Link
+                    href="/hesabim"
+                    className={`flex justify-between items-center p-4 border-b ${
+                      pathname === "/hesabim" ? "text-primary" : "text-gray-800"
+                    }`}
+                    onClick={onClose}
+                  >
+                    <span>Hesabım</span>
+                    <ChevronRight className="h-5 w-5" />
+                  </Link>
+                  <Link
+                    href="/hesabim/siparislerim"
+                    className={`flex justify-between items-center p-4 border-b ${
+                      pathname === "/hesabim/siparislerim" ? "text-primary" : "text-gray-800"
+                    }`}
+                    onClick={onClose}
+                  >
+                    <span>Siparişlerim</span>
+                    <ChevronRight className="h-5 w-5" />
+                  </Link>
+                  <Link
+                    href="/hesabim/favorilerim"
+                    className={`flex justify-between items-center p-4 border-b ${
+                      pathname === "/hesabim/favorilerim" ? "text-primary" : "text-gray-800"
+                    }`}
+                    onClick={onClose}
+                  >
+                    <span>Favorilerim</span>
+                    <ChevronRight className="h-5 w-5" />
+                  </Link>
+                </>
+              )}
+              <Link
+                href="/sepet"
+                className={`flex justify-between items-center p-4 border-b ${
+                  pathname === "/sepet" ? "text-primary" : "text-gray-800"
+                }`}
+                onClick={onClose}
+              >
+                <span>Sepetim</span>
+                <div className="flex items-center">
+                  {cartItemCount > 0 && (
+                    <span className="bg-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center mr-2">
+                      {cartItemCount}
+                    </span>
+                  )}
+                  <ChevronRight className="h-5 w-5" />
+                </div>
+              </Link>
+            </div>
+
+            {/* Login/Logout at the bottom */}
+            <div className="mt-auto border-t">
+              {user ? (
+                <button
+                  onClick={() => {
+                    signOut()
+                    onClose()
+                  }}
+                  className="flex items-center w-full p-4 text-gray-800 hover:bg-gray-100"
+                >
+                  <LogOut className="h-5 w-5 mr-2" />
+                  <span>Çıkış Yap</span>
+                </button>
+              ) : (
+                <Link
+                  href="/giris-yap"
+                  className="flex items-center w-full p-4 text-gray-800 hover:bg-gray-100"
+                  onClick={onClose}
+                >
+                  <span>Giriş Yap / Üye Ol</span>
+                  <ChevronRight className="h-5 w-5 ml-auto" />
+                </Link>
+              )}
+            </div>
+          </nav>
+        </div>
+      </div>
+    </div>
   )
 }
-
-export default MobileMenu

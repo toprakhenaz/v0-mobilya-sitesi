@@ -2,17 +2,36 @@ import Link from "next/link"
 import Image from "next/image"
 import type { Category } from "@/lib/supabase"
 
+// Category image mapping
+const categoryImages: Record<string, string> = {
+  "bahce-oturma-gruplari": "/categories/bahce-oturma-gruplari.jpg",
+  "bahce-kose-takimlari": "/categories/bahce-kose-takimlari.jpg",
+  "masa-takimlari": "/categories/masa-takimlari.jpg",
+  sezlonglar: "/categories/sezlonglar.jpg",
+  "luks-oturma-odasi": "/luxury-living-room.png",
+  "luks-yemek-odasi": "/luxury-dining-room.png",
+  "executive-ofis": "/executive-office-furniture.png",
+  "premium-yatak-odasi": "/premium-bedroom-furniture.png",
+  "ozel-tasarim": "/custom-furniture-design.png",
+}
+
 interface CategoryCardProps {
   category: Category
 }
 
 const CategoryCard = ({ category }: CategoryCardProps) => {
+  // Get image URL from mapping or use placeholder
+  const imageUrl =
+    category.image_url ||
+    categoryImages[category.slug] ||
+    `/placeholder.svg?height=300&width=300&query=${encodeURIComponent(category.name + " furniture")}`
+
   return (
     <Link href={`/kategori/${category.slug}`} className="group">
       <div className="relative overflow-hidden rounded-lg bg-white shadow-card">
         <div className="relative h-40 w-full">
           <Image
-            src={category.image_url || "/placeholder.svg?height=300&width=300&query=garden furniture category"}
+            src={imageUrl || "/placeholder.svg"}
             alt={category.name}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"

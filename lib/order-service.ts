@@ -5,7 +5,6 @@ import type { CartItem } from "@/contexts/cart-context"
 export type Order = {
   id: number
   user_id: string | null
-  // Remove guest_email field
   guest_phone?: string
   total_amount: number
   status: "pending" | "paid" | "shipped" | "delivered" | "cancelled"
@@ -30,7 +29,6 @@ export type OrderItem = {
   product?: any
 }
 
-// Modify the createOrder function to remove guest_email field
 export async function createOrder(
   userId: string | null,
   cartItems: CartItem[],
@@ -38,66 +36,28 @@ export async function createOrder(
   contactPhone: string,
   guestEmail?: string,
 ): Promise<Order> {
-  // Calculate total amount
-  const subtotal = cartItems.reduce((total, item) => {
-    const price = item.product?.price || 0
-    return total + price * item.quantity
-  }, 0)
-
-  // Calculate shipping
-  const shipping = subtotal > 5000 ? 0 : 150
-  const finalTotal = subtotal + shipping
-
   try {
-    // Create order - remove guest_email field
-    const { data: orderData, error: orderError } = await supabase
-      .from("orders")
-      .insert({
-        user_id: userId,
-        // Remove guest_email field as it doesn't exist in the schema
-        guest_phone: !userId ? contactPhone : undefined,
-        total_amount: finalTotal,
-        status: "pending",
-        payment_method: "bank_transfer",
-        payment_status: "pending",
-        shipping_address: shippingAddress.address,
-        shipping_city: shippingAddress.city,
-        shipping_postal_code: shippingAddress.postal_code,
-        shipping_country: shippingAddress.country,
-        contact_phone: contactPhone,
-      })
-      .select()
-      .single()
+    // Use the API endpoint to create the order
+    const response = await fetch("/api/orders/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId,
+        cartItems,
+        shippingAddress,
+        contactPhone,
+      }),
+    })
 
-    if (orderError) {
-      throw orderError
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || "Failed to create order")
     }
 
-    const order = orderData as Order
-
-    // Create order items
-    const orderItems = cartItems.map((item) => ({
-      order_id: order.id,
-      product_id: item.product_id,
-      quantity: item.quantity,
-      price: item.product?.price || 0,
-    }))
-
-    const { error: itemsError } = await supabase.from("order_items").insert(orderItems)
-
-    if (itemsError) {
-      throw itemsError
-    }
-
-    // Update product stock
-    for (const item of cartItems) {
-      if (item.product) {
-        const newStock = item.product.stock - item.quantity
-        await supabase.from("products").update({ stock: newStock }).eq("id", item.product_id)
-      }
-    }
-
-    return order
+    const data = await response.json()
+    return data.order as Order
   } catch (error) {
     console.error("Error creating order:", error)
     throw error
@@ -167,7 +127,6 @@ export async function getOrderByTrackingCode(orderId: number, email: string): Pr
         )
       `)
       .eq("id", orderId)
-      // Remove the guest_email check since it doesn't exist
       .single()
 
     if (error) throw error

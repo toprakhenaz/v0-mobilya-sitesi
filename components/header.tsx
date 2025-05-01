@@ -2,13 +2,13 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { Menu, Search, ShoppingBag, User, LogOut, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
 import { useAuth } from "@/contexts/auth-context"
 import { useCart } from "@/contexts/cart-context"
 import SearchBar from "./search-bar"
+import Logo from "./logo"
 
 export default function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
@@ -105,9 +105,7 @@ export default function Header() {
 
           {/* Logo */}
           <Link href="/" className="flex-shrink-0">
-            <div className="relative h-8 w-32 md:h-10 md:w-40">
-              <Image src="/logo.png" alt="Divona Home" fill className="object-contain" priority />
-            </div>
+            <Logo size="medium" />
           </Link>
 
           {/* Desktop Search */}
@@ -194,18 +192,18 @@ export default function Header() {
               </Link>
             </li>
             <li>
+              <Link href="/kategoriler" className="block py-3 font-medium hover:text-primary">
+                Kategoriler
+              </Link>
+            </li>
+            <li>
               <Link href="/kampanyali-urunler" className="block py-3 font-medium hover:text-primary">
                 Kampanyalı Ürünler
               </Link>
             </li>
             <li>
-              <Link href="/bahce-oturma-grubu" className="block py-3 font-medium hover:text-primary">
-                Bahçe Oturma Grupları
-              </Link>
-            </li>
-            <li>
-              <Link href="/kategori/masa-takimlari" className="block py-3 font-medium hover:text-primary">
-                Masa Takımları
+              <Link href="/yeni-urunler" className="block py-3 font-medium hover:text-primary">
+                Yeni Ürünler
               </Link>
             </li>
           </ul>

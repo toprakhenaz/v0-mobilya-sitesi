@@ -2,9 +2,9 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Loader2, AlertCircle, Plus } from "lucide-react"
+import { Loader2, AlertCircle, Plus, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -30,7 +30,12 @@ export default function Checkout() {
   const [isGuest, setIsGuest] = useState(false)
   const [guestEmail, setGuestEmail] = useState("")
   const [acceptTerms, setAcceptTerms] = useState(false)
+  const [acceptPrivacy, setAcceptPrivacy] = useState(false)
+  const [acceptDistanceSales, setAcceptDistanceSales] = useState(false)
   const [showAddressDialog, setShowAddressDialog] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [receiptFile, setReceiptFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // New address form state
   const [newAddress, setNewAddress] = useState({
@@ -133,18 +138,25 @@ export default function Checkout() {
     }
   }
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setReceiptFile(e.target.files[0])
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setErrorMessage(null)
 
     if (cartItems.length === 0) {
       router.push("/sepet")
       return
     }
 
-    if (!acceptTerms) {
+    if (!acceptTerms || !acceptPrivacy || !acceptDistanceSales) {
       toast({
         title: "Hata",
-        description: "Devam etmek için kullanım koşullarını kabul etmelisiniz.",
+        description: "Devam etmek için tüm sözleşmeleri kabul etmelisiniz.",
         variant: "destructive",
       })
       return
@@ -207,6 +219,8 @@ export default function Checkout() {
       // Redirect to order confirmation page
       router.push(`/siparis/tesekkurler?order_id=${order.id}`)
     } catch (error: any) {
+      console.error("Order creation error:", error)
+      setErrorMessage(error.message || "Sipariş oluşturulurken bir hata oluştu.")
       toast({
         title: "Hata",
         description: error.message || "Sipariş oluşturulurken bir hata oluştu.",
@@ -229,6 +243,16 @@ export default function Checkout() {
     <div className="py-6">
       <div className="container mx-auto px-4">
         <h1 className="text-2xl font-bold mb-6">Sipariş Tamamla</h1>
+
+        {errorMessage && (
+          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md mb-6 flex items-start">
+            <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium">Hata oluştu</p>
+              <p className="text-sm">{errorMessage}</p>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -535,6 +559,41 @@ export default function Checkout() {
                   </p>
                 </div>
 
+                {/* Dekont Yükleme */}
+                <div className="mb-4">
+                  <Label htmlFor="receipt" className="block mb-2">
+                    Dekont Yükleme (İsteğe Bağlı)
+                  </Label>
+                  <div className="flex items-center">
+                    <input
+                      type="file"
+                      id="receipt"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      className="hidden"
+                      accept="image/*,.pdf"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Dekont Yükle
+                    </Button>
+                    {receiptFile && (
+                      <span className="ml-3 text-sm text-gray-600">
+                        {receiptFile.name} ({Math.round(receiptFile.size / 1024)} KB)
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Ödemenizi yaptıktan sonra dekontu yükleyebilirsiniz. Bu işlem siparişinizin daha hızlı onaylanmasını
+                    sağlayacaktır.
+                  </p>
+                </div>
+
                 <div className="flex items-start bg-yellow-50 p-3 rounded-md">
                   <AlertCircle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5" />
                   <p className="text-sm text-yellow-800">
@@ -567,7 +626,7 @@ export default function Checkout() {
                 </div>
 
                 <div className="mb-6">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 mb-2">
                     <Checkbox
                       id="accept_terms"
                       checked={acceptTerms}
@@ -584,7 +643,19 @@ export default function Checkout() {
                         >
                           Kullanım Koşulları
                         </a>
-                        'nı ve{" "}
+                        'nı okudum ve kabul ediyorum.
+                      </span>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Checkbox
+                      id="accept_privacy"
+                      checked={acceptPrivacy}
+                      onCheckedChange={(checked) => setAcceptPrivacy(!!checked)}
+                      required
+                    />
+                    <Label htmlFor="accept_privacy" className="text-sm">
+                      <span className="text-gray-700">
                         <a
                           href="/gizlilik-politikasi"
                           target="_blank"
@@ -594,6 +665,27 @@ export default function Checkout() {
                           Gizlilik Politikası
                         </a>
                         'nı okudum ve kabul ediyorum.
+                      </span>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="accept_distance_sales"
+                      checked={acceptDistanceSales}
+                      onCheckedChange={(checked) => setAcceptDistanceSales(!!checked)}
+                      required
+                    />
+                    <Label htmlFor="accept_distance_sales" className="text-sm">
+                      <span className="text-gray-700">
+                        <a
+                          href="/mesafeli-satis-sozlesmesi"
+                          target="_blank"
+                          className="text-primary hover:underline"
+                          rel="noreferrer"
+                        >
+                          Mesafeli Satış Sözleşmesi
+                        </a>
+                        'ni okudum ve kabul ediyorum.
                       </span>
                     </Label>
                   </div>

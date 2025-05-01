@@ -1,7 +1,7 @@
 import Link from "next/link"
-import Image from "next/image"
 import { Search, User, ShoppingCart } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import Logo from "./logo"
 
 const DesktopHeader = () => {
   const categories = [
@@ -48,9 +48,7 @@ const DesktopHeader = () => {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex-shrink-0">
-          <div className="relative h-10 w-40">
-            <Image src="/divona-home-logo.png" alt="Divona Home" width={160} height={40} className="object-contain" />
-          </div>
+          <Logo size="medium" />
         </Link>
 
         {/* Search Bar */}

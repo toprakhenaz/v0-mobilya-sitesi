@@ -2,11 +2,11 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { Menu, Search, ShoppingCart } from "lucide-react"
 import MobileMenu from "./mobile-menu"
 import { useCart } from "@/contexts/cart-context"
 import SearchBar from "./search-bar"
+import Logo from "./logo"
 
 const MobileHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -26,9 +26,7 @@ const MobileHeader = () => {
           </button>
 
           <Link href="/" className="flex-shrink-0">
-            <div className="relative h-8 w-32">
-              <Image src="/divona-home-logo.png" alt="Divona Home" width={128} height={32} className="object-contain" />
-            </div>
+            <Logo size="small" />
           </Link>
 
           <div className="flex items-center space-x-3">

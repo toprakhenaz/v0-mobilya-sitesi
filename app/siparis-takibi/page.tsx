@@ -5,7 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Search, Loader2, CheckCircle, Truck, Package, Clock } from "lucide-react"
+import { Search, Loader2, CheckCircle, Truck, Package, Clock, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -153,7 +153,12 @@ export default function OrderTracking() {
                     />
                   </div>
 
-                  {error && <p className="text-red-500 text-sm">{error}</p>}
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md flex items-start">
+                      <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+                      <p>{error}</p>
+                    </div>
+                  )}
 
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? (
@@ -260,6 +265,17 @@ export default function OrderTracking() {
                     <p className="text-sm">
                       <span className="font-medium">Kargo Takip Numarası:</span> {order.tracking_number}
                     </p>
+                    {order.shipping_company && (
+                      <p className="text-sm mt-1">
+                        <span className="font-medium">Kargo Firması:</span> {order.shipping_company}
+                      </p>
+                    )}
+                    {order.estimated_delivery && (
+                      <p className="text-sm mt-1">
+                        <span className="font-medium">Tahmini Teslimat:</span>{" "}
+                        {new Date(order.estimated_delivery).toLocaleDateString("tr-TR")}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
