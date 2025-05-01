@@ -52,7 +52,7 @@ export default function Footer() {
           {/* Logo ve Açıklama */}
           <div className="md:col-span-1">
             <Link href="/" className="block mb-4">
-              <Image src="/logo.png" alt="Divona Home" width={150} height={50} />
+              <Logo size="medium" />
             </Link>
             <p className="text-gray-600 text-sm">
               Divona Home, bahçe mobilyaları ve dış mekan dekorasyonu konusunda Türkiye'nin önde gelen markasıdır.
@@ -195,7 +195,7 @@ export default function Footer() {
               <Link href="https://etbis.gov.tr" target="_blank" rel="noopener noreferrer" className="mr-4">
                 {/* ETBIS logo */}
                 <div className="h-16 w-16 relative">
-                  <Image src="/etbis-logo-new.png" alt="ETBIS" fill className="object-contain" />
+                  <Image src="/etbis-qr.jpeg" alt="ETBIS" fill className="object-contain" />
                 </div>
               </Link>
               <div>
