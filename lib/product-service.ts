@@ -323,8 +323,15 @@ export async function searchProducts(
       throw error
     }
 
+    // Açık tip tanımlaması ile ürünlere resimleri ekliyoruz
+    const productsWithImages = data?.map((product: any) => {
+      const slug = product.slug || ""
+      const images = productImages[slug] || [defaultProductImage]
+      return { ...product, images }
+    }) || []
+
     return {
-      products: (data as Product[]) || [],
+      products: productsWithImages as Product[], // Açık tip atama
       total: count || 0,
     }
   } catch (error) {
