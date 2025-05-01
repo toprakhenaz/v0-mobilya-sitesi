@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Home, Grid3X3, FileText, ShoppingCart } from "lucide-react"
+import Logo from "./logo"
 
 const MobileFooter = () => {
   return (
@@ -35,6 +36,9 @@ const MobileFooter = () => {
       <footer className="bg-gray-900 text-white pt-6 pb-24 md:pb-6">
         <div className="container mx-auto px-4">
           <div className="mb-6">
+            <Link href="/" className="flex items-center">
+              <Logo size="small" className="mb-4" />
+            </Link>
             <h3 className="text-lg font-bold mb-3">İletişim bilgileri</h3>
             <div className="flex items-center mb-2">
               <div className="bg-green-500 rounded-full p-2 mr-3">

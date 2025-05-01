@@ -44,7 +44,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
       >
         <div className="flex justify-between items-center p-4 border-b">
           <h2 className="text-lg font-bold">Menü</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700" aria-label="Close menu">
             <X className="h-6 w-6" />
           </button>
         </div>

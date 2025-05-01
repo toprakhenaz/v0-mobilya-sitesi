@@ -4,6 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useAuth } from "@/contexts/auth-context"
 import { Shield, CreditCard, Truck, Award } from "lucide-react"
+import Logo from "./logo"
 
 export default function Footer() {
   const { user } = useAuth()
@@ -51,8 +52,8 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo ve Açıklama */}
           <div className="md:col-span-1">
-            <Link href="/" className="block mb-4">
-              <Logo size="medium" />
+            <Link href="/" className="flex items-center">
+              <Logo size="medium" className="mb-4" />
             </Link>
             <p className="text-gray-600 text-sm">
               Divona Home, bahçe mobilyaları ve dış mekan dekorasyonu konusunda Türkiye'nin önde gelen markasıdır.
@@ -195,7 +196,7 @@ export default function Footer() {
               <Link href="https://etbis.gov.tr" target="_blank" rel="noopener noreferrer" className="mr-4">
                 {/* ETBIS logo */}
                 <div className="h-16 w-16 relative">
-                  <Image src="/etbis-qr.jpeg" alt="ETBIS" fill className="object-contain" />
+                  <Image src="/etbis-logo-new.png" alt="ETBIS" fill className="object-contain" />
                 </div>
               </Link>
               <div>

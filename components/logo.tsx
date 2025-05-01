@@ -10,17 +10,14 @@ export default function Logo({ size = "medium", className = "" }: LogoProps) {
     medium: { width: 140, height: 40 },
     large: { width: 180, height: 50 },
   }
-  
+
   const { width, height } = sizes[size]
-  
+
   return (
     <div className={`relative ${className}`} style={{ width, height }}>
       <svg width={width} height={height} viewBox="0 0 180 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-        {/* Stylized house/garden icon */}
         <path d="M20 10L35 20V40H5V20L20 10Z" fill="#0891b2" stroke="#0891b2" strokeWidth="2" />
         <rect x="15" y="30" width="10" height="10" fill="white" />
-        
-        {/* DIVONA text */}
         <path d="M50 15H55V40H50V15ZM50 10H55V15H50V10Z" fill="#1e293b" />
         <path
           d="M60 15H65L65 35C65 36.6569 66.3431 38 68 38C69.6569 38 71 36.6569 71 35V15H76V35C76 39.4183 72.4183 43 68 43C63.5817 43 60 39.4183 60 35V15Z"
