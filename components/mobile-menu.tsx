@@ -3,7 +3,19 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { X, ChevronRight, LogOut } from "lucide-react"
+import {
+  X,
+  ChevronRight,
+  LogOut,
+  Info,
+  Phone,
+  Search,
+  ShoppingBag,
+  FileText,
+  Shield,
+  HelpCircle,
+  MapPin,
+} from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { useCart } from "@/contexts/cart-context"
 
@@ -49,6 +61,17 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           </button>
         </div>
 
+        <div className="p-4 border-b">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Ürün ara..."
+              className="w-full p-2 pl-8 border border-gray-300 rounded-md"
+            />
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          </div>
+        </div>
+
         <div className="flex-1 overflow-y-auto">
           <nav className="flex flex-col h-full">
             <div className="flex-1">
@@ -62,6 +85,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 <span>Tüm Ürünler</span>
                 <ChevronRight className="h-5 w-5" />
               </Link>
+
               <Link
                 href="/yeni-urunler"
                 className={`flex justify-between items-center p-4 border-b ${
@@ -69,9 +93,13 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 }`}
                 onClick={onClose}
               >
-                <span className="text-red-500 font-medium">Yeni Ürünler</span>
+                <div className="flex items-center">
+                  <span className="text-red-500 font-medium">Yeni Ürünler</span>
+                  <span className="ml-2 px-2 py-0.5 text-xs bg-red-500 text-white rounded">Yeni</span>
+                </div>
                 <ChevronRight className="h-5 w-5" />
               </Link>
+
               <Link
                 href="/kampanyali-urunler"
                 className={`flex justify-between items-center p-4 border-b ${
@@ -82,6 +110,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 <span>Kampanyalı Ürünler</span>
                 <ChevronRight className="h-5 w-5" />
               </Link>
+
               <Link
                 href="/siparis-takibi"
                 className={`flex justify-between items-center p-4 border-b ${
@@ -89,9 +118,30 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 }`}
                 onClick={onClose}
               >
-                <span>Sipariş Takibi</span>
+                <div className="flex items-center">
+                  <Search className="h-5 w-5 mr-2" />
+                  <span>Sipariş Takibi</span>
+                </div>
                 <ChevronRight className="h-5 w-5" />
               </Link>
+
+              <Link
+                href="/sepet"
+                className={`flex justify-between items-center p-4 border-b ${
+                  pathname === "/sepet" ? "text-primary" : "text-gray-800"
+                }`}
+                onClick={onClose}
+              >
+                <div className="flex items-center">
+                  <ShoppingBag className="h-5 w-5 mr-2" />
+                  <span>Sepetim</span>
+                  {cartItemCount > 0 && (
+                    <span className="ml-2 px-2 py-0.5 text-xs bg-primary text-white rounded-full">{cartItemCount}</span>
+                  )}
+                </div>
+                <ChevronRight className="h-5 w-5" />
+              </Link>
+
               {user && (
                 <>
                   <Link
@@ -126,22 +176,79 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                   </Link>
                 </>
               )}
+            </div>
+
+            {/* Kurumsal Section */}
+            <div className="py-2 border-t">
+              <div className="px-4 py-2 text-sm font-semibold text-gray-500 uppercase">Kurumsal</div>
               <Link
-                href="/sepet"
-                className={`flex justify-between items-center p-4 border-b ${
-                  pathname === "/sepet" ? "text-primary" : "text-gray-800"
-                }`}
+                href="/hakkimizda"
+                className="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100"
                 onClick={onClose}
               >
-                <span>Sepetim</span>
-                <div className="flex items-center">
-                  {cartItemCount > 0 && (
-                    <span className="bg-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center mr-2">
-                      {cartItemCount}
-                    </span>
-                  )}
-                  <ChevronRight className="h-5 w-5" />
-                </div>
+                <Info className="w-5 h-5 mr-3" />
+                Hakkımızda
+              </Link>
+              <Link
+                href="/iletisim"
+                className="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100"
+                onClick={onClose}
+              >
+                <Phone className="w-5 h-5 mr-3" />
+                İletişim
+              </Link>
+              <Link
+                href="/sikca-sorulan-sorular"
+                className="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100"
+                onClick={onClose}
+              >
+                <HelpCircle className="w-5 h-5 mr-3" />
+                Sıkça Sorulan Sorular
+              </Link>
+              <Link
+                href="/magaza-konumlari"
+                className="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100"
+                onClick={onClose}
+              >
+                <MapPin className="w-5 h-5 mr-3" />
+                Mağaza Konumları
+              </Link>
+            </div>
+
+            {/* Legal Section */}
+            <div className="py-2 border-t">
+              <div className="px-4 py-2 text-sm font-semibold text-gray-500 uppercase">Yasal</div>
+              <Link
+                href="/kvkk"
+                className="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100"
+                onClick={onClose}
+              >
+                <Shield className="w-5 h-5 mr-3" />
+                KVKK
+              </Link>
+              <Link
+                href="/gizlilik-politikasi"
+                className="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100"
+                onClick={onClose}
+              >
+                <FileText className="w-5 h-5 mr-3" />
+                Gizlilik Politikası
+              </Link>
+              <Link
+                href="/kullanim-kosullari"
+                className="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100"
+                onClick={onClose}
+              >
+                <FileText className="w-5 h-5 mr-3" />
+                Kullanım Koşulları
+              </Link>
+              <Link
+                href="/iade-kosullari"
+                className="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100"
+                onClick={onClose}
+              >
+                <FileText className="w-5 h-5 mr-3" />
+                İade Koşulları
               </Link>
             </div>
 

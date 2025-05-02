@@ -13,20 +13,28 @@ interface CarouselItem {
   description: string
 }
 
+// carouselItems dizisini güncelleyelim
 const carouselItems: CarouselItem[] = [
   {
     id: 1,
-    imageUrl: "/hero-1.jpg",
+    imageUrl: "/hero-1-new.png",
     title: "YAZ FIRSATLARI",
     subtitle: "Bahçe Mobilyalarında",
     description: "%30 İNDİRİM",
   },
   {
     id: 2,
-    imageUrl: "/hero-2.jpg",
+    imageUrl: "/hero-2-new.png",
     title: "BAHÇE TAKIMI ALANA",
     subtitle: "Şezlong",
     description: "HEDİYE",
+  },
+  {
+    id: 3,
+    imageUrl: "/hero-3-new.png",
+    title: "YENİ SEZON",
+    subtitle: "Rattan Bahçe Mobilyaları",
+    description: "STOKLARDA",
   },
 ]
 

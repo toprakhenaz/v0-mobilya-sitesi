@@ -5,7 +5,19 @@ import type React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, ShoppingBag, Tag, FileText, Settings, Users, CreditCard, Phone, LogOut } from "lucide-react"
+// Hero Carousel yönetimi için import ekleyin
+import {
+  LayoutDashboard,
+  ShoppingBag,
+  Tag,
+  FileText,
+  Settings,
+  Users,
+  CreditCard,
+  Phone,
+  LogOut,
+  ImageIcon,
+} from "lucide-react"
 import { useAdmin } from "@/contexts/admin-context"
 
 interface SidebarItemProps {
@@ -54,6 +66,9 @@ export function AdminSidebar() {
             title="Ödeme Ayarları"
           />
           <SidebarItem href="/admin/contact-settings" icon={<Phone className="h-5 w-5" />} title="İletişim Ayarları" />
+          {/* SidebarItem listesine Hero Carousel yönetimi için bir öğe ekleyin */}
+          {/* Diğer SidebarItem'lardan sonra, <div className="pt-4 mt-4 border-t"> satırından önce aşağıdaki kodu ekleyin: */}
+          <SidebarItem href="/admin/hero-carousel" icon={<ImageIcon className="h-5 w-5" />} title="Hero Carousel" />
 
           <div className="pt-4 mt-4 border-t">
             <button

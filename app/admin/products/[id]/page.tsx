@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
@@ -33,7 +34,10 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   const [slug, setSlug] = useState("")
   const [description, setDescription] = useState("")
   const [price, setPrice] = useState("")
-  const [discountPrice, setDiscountPrice] = useState("")
+  const [originalPrice, setOriginalPrice] = useState("")
+  const [discountPercentage, setDiscountPercentage] = useState("")
+  const [isOnSale, setIsOnSale] = useState(false)
+  const [isNew, setIsNew] = useState(false)
   const [stock, setStock] = useState("0")
   const [categoryId, setCategoryId] = useState("")
   const [categories, setCategories] = useState<Category[]>([])
@@ -69,7 +73,10 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         setSlug(productData.slug)
         setDescription(productData.description || "")
         setPrice(productData.price.toString())
-        setDiscountPrice(productData.discount_price ? productData.discount_price.toString() : "")
+        setOriginalPrice(productData.original_price ? productData.original_price.toString() : "")
+        setDiscountPercentage(productData.discount_percentage ? productData.discount_percentage.toString() : "")
+        setIsOnSale(productData.is_on_sale || false)
+        setIsNew(productData.is_new || false)
         setStock(productData.stock.toString())
         setCategoryId(productData.category_id.toString())
         setImages(productData.images || [])
@@ -109,6 +116,22 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     }
   }, [name, product, slug])
 
+  // İndirim yüzdesi hesapla
+  useEffect(() => {
+    if (price && originalPrice && Number(originalPrice) > Number(price)) {
+      const discount = Math.round(((Number(originalPrice) - Number(price)) / Number(originalPrice)) * 100)
+      setDiscountPercentage(discount.toString())
+    }
+  }, [price, originalPrice])
+
+  // Orijinal fiyatı hesapla
+  useEffect(() => {
+    if (price && discountPercentage && Number(discountPercentage) > 0) {
+      const original = Math.round((Number(price) * 100) / (100 - Number(discountPercentage)))
+      setOriginalPrice(original.toString())
+    }
+  }, [price, discountPercentage])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -128,7 +151,10 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         slug,
         description,
         price: Number.parseFloat(price),
-        discount_price: discountPrice ? Number.parseFloat(discountPrice) : null,
+        original_price: originalPrice ? Number.parseFloat(originalPrice) : null,
+        discount_percentage: discountPercentage ? Number.parseInt(discountPercentage, 10) : null,
+        is_new: isNew,
+        is_on_sale: isOnSale,
         stock: Number.parseInt(stock, 10),
         category_id: Number.parseInt(categoryId, 10),
       })
@@ -327,7 +353,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="price">Fiyat (₺)</Label>
+                    <Label htmlFor="price">Satış Fiyatı (₺)</Label>
                     <Input
                       id="price"
                       type="number"
@@ -340,17 +366,33 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="discountPrice">İndirimli Fiyat (₺)</Label>
+                    <Label htmlFor="originalPrice">Normal Fiyat (₺)</Label>
                     <Input
-                      id="discountPrice"
+                      id="originalPrice"
                       type="number"
                       min="0"
                       step="0.01"
-                      value={discountPrice}
-                      onChange={(e) => setDiscountPrice(e.target.value)}
+                      value={originalPrice}
+                      onChange={(e) => setOriginalPrice(e.target.value)}
                       placeholder="0.00"
                     />
+                    <p className="text-xs text-muted-foreground">İndirimli ürünler için normal fiyat</p>
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="discountPercentage">İndirim Yüzdesi (%)</Label>
+                    <Input
+                      id="discountPercentage"
+                      type="number"
+                      min="0"
+                      max="99"
+                      value={discountPercentage}
+                      onChange={(e) => setDiscountPercentage(e.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="stock">Stok</Label>
                     <Input
@@ -362,6 +404,20 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                       placeholder="0"
                       required
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="block mb-2">Yeni Ürün</Label>
+                    <div className="flex items-center space-x-2">
+                      <Switch id="is-new" checked={isNew} onCheckedChange={setIsNew} />
+                      <Label htmlFor="is-new">Yeni ürün olarak işaretle</Label>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="block mb-2">İndirimde</Label>
+                    <div className="flex items-center space-x-2">
+                      <Switch id="is-on-sale" checked={isOnSale} onCheckedChange={setIsOnSale} />
+                      <Label htmlFor="is-on-sale">İndirimde olarak işaretle</Label>
+                    </div>
                   </div>
                 </div>
 

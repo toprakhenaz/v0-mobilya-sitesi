@@ -248,33 +248,79 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Payment Methods */}
+        {/* International Shipping Flags */}
         <div className="mt-8 pt-8 border-t">
+          <h3 className="font-bold mb-4 text-center">Uluslararası Gönderim</h3>
+          <div className="flex flex-wrap justify-center gap-6 items-center mb-6">
+            <div className="w-12 h-12 overflow-hidden rounded-full border-2 border-gray-200 hover:border-primary transition-all">
+              <Image
+                src="/flags/turkey-flag.png"
+                alt="Türkiye"
+                width={48}
+                height={48}
+                className="object-cover w-full h-full"
+              />
+            </div>
+            <div className="w-12 h-12 overflow-hidden rounded-full border-2 border-gray-200 hover:border-primary transition-all">
+              <Image
+                src="/flags/germany-flag.png"
+                alt="Almanya"
+                width={48}
+                height={48}
+                className="object-cover w-full h-full"
+              />
+            </div>
+            <div className="w-12 h-12 overflow-hidden rounded-full border-2 border-gray-200 hover:border-primary transition-all">
+              <Image
+                src="/flags/uk-flag.png"
+                alt="İngiltere"
+                width={48}
+                height={48}
+                className="object-cover w-full h-full"
+              />
+            </div>
+            <div className="w-12 h-12 overflow-hidden rounded-full border-2 border-gray-200 hover:border-primary transition-all">
+              <Image
+                src="/flags/france-flag.png"
+                alt="Fransa"
+                width={48}
+                height={48}
+                className="object-cover w-full h-full"
+              />
+            </div>
+            <div className="w-12 h-12 overflow-hidden rounded-full border-2 border-gray-200 hover:border-primary transition-all">
+              <Image
+                src="/flags/netherlands-flag.png"
+                alt="Hollanda"
+                width={48}
+                height={48}
+                className="object-cover w-full h-full"
+              />
+            </div>
+            <div className="w-12 h-12 overflow-hidden rounded-full border-2 border-gray-200 hover:border-primary transition-all">
+              <Image
+                src="/flags/usa-flag.png"
+                alt="ABD"
+                width={48}
+                height={48}
+                className="object-cover w-full h-full"
+              />
+            </div>
+          </div>
+
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-600 text-sm mb-4 md:mb-0">
               © {new Date().getFullYear()} Divona Home. Tüm hakları saklıdır.
             </p>
-            <div className="flex flex-wrap justify-center gap-4 items-center">
-              <Image src="/visa-logo-new.png" alt="Visa" width={60} height={40} className="object-contain" />
-              <Image src="/mastercard-logo.png" alt="Mastercard" width={60} height={40} className="object-contain" />
-              <Image
-                src="/american-express-logo.png"
-                alt="American Express"
-                width={60}
-                height={40}
-                className="object-contain"
-              />
-              <Image src="/troy-logo.png" alt="Troy" width={60} height={40} className="object-contain" />
-              <Image src="/iyzico-logo.png" alt="iyzico" width={60} height={40} className="object-contain" />
-            </div>
           </div>
           <div className="mt-6 flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-4 md:mb-0">
               <Link href="https://etbis.gov.tr" target="_blank" rel="noopener noreferrer" className="mr-4">
-                <Image src="/etbis-logo-new.png" alt="ETBIS" width={64} height={64} className="object-contain" />
+                <Image src="/etbis-qr.png" alt="ETBIS" width={100} height={100} className="object-contain" />
               </Link>
               <div>
                 <p className="text-xs text-gray-500">ETBIS - E-Ticaret Bilgi Sistemi</p>
+                <p className="text-xs text-gray-500 font-bold">ETBİS'e Kayıtlıdır</p>
                 <p className="text-xs text-gray-500">Güvenli E-Ticaret</p>
               </div>
             </div>

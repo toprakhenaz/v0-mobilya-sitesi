@@ -114,6 +114,19 @@ export interface User {
   orders_count?: number
 }
 
+// Hero Carousel Types
+export interface HeroSlide {
+  id: number
+  image_url: string
+  title: string
+  subtitle: string
+  description: string
+  order_index: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
 // Get all site settings
 export async function getSiteSettings(): Promise<SiteSetting[]> {
   const supabase = getSupabaseClient()
@@ -814,4 +827,99 @@ export async function getUserOrders(userId: string): Promise<Order[]> {
   }
 
   return data || []
+}
+
+// Get all hero slides
+export async function getHeroSlides(): Promise<HeroSlide[]> {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase.from("hero_slides").select("*").order("order_index", { ascending: true })
+
+  if (error) {
+    console.error("Hero slaytları alınırken hata:", error.message)
+    throw new Error(error.message)
+  }
+
+  return data || []
+}
+
+// Get a hero slide by ID
+export async function getHeroSlide(id: number): Promise<HeroSlide | null> {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase.from("hero_slides").select("*").eq("id", id).single()
+
+  if (error) {
+    console.error(`Hero slayt (ID: ${id}) alınırken hata:`, error.message)
+    return null
+  }
+
+  return data
+}
+
+// Create a new hero slide
+export async function createHeroSlide(
+  slide: Omit<HeroSlide, "id" | "created_at" | "updated_at">,
+): Promise<HeroSlide | null> {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from("hero_slides")
+    .insert([
+      {
+        ...slide,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ])
+    .select()
+
+  if (error) {
+    console.error("Hero slayt oluşturulurken hata:", error.message)
+    throw new Error(error.message)
+  }
+
+  return data?.[0] || null
+}
+
+// Update a hero slide
+export async function updateHeroSlide(id: number, slide: Partial<HeroSlide>): Promise<HeroSlide | null> {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from("hero_slides")
+    .update({ ...slide, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select()
+    .single()
+
+  if (error) {
+    console.error(`Hero slayt (ID: ${id}) güncellenirken hata:`, error.message)
+    throw new Error(error.message)
+  }
+
+  return data
+}
+
+// Delete a hero slide
+export async function deleteHeroSlide(id: number): Promise<void> {
+  const supabase = getSupabaseClient()
+  const { error } = await supabase.from("hero_slides").delete().eq("id", id)
+
+  if (error) {
+    console.error(`Hero slayt (ID: ${id}) silinirken hata:`, error.message)
+    throw new Error(error.message)
+  }
+}
+
+// Update hero slide order
+export async function updateHeroSlideOrder(slides: { id: number; order_index: number }[]): Promise<void> {
+  const supabase = getSupabaseClient()
+
+  // Use a transaction to update all slides
+  const updates = slides.map((slide) => {
+    return supabase
+      .from("hero_slides")
+      .update({ order_index: slide.order_index, updated_at: new Date().toISOString() })
+      .eq("id", slide.id)
+  })
+
+  // Execute all updates
+  await Promise.all(updates)
 }

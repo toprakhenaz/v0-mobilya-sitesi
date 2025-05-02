@@ -44,7 +44,8 @@ export async function getProducts(
           query = query.order("created_at", { ascending: false })
           break
         case "popular":
-          query = query.order("sales_count", { ascending: false })
+          // Değişiklik: sales_count yerine id'ye göre sıralama yapıyoruz
+          query = query.order("id", { ascending: false })
           break
       }
     } else {
@@ -290,7 +291,8 @@ export async function searchProducts(
           dbQuery = dbQuery.order("created_at", { ascending: false })
           break
         case "popular":
-          dbQuery = dbQuery.order("sales_count", { ascending: false })
+          // Değişiklik: sales_count yerine id'ye göre sıralama yapıyoruz
+          dbQuery = dbQuery.order("id", { ascending: false })
           break
       }
     } else {

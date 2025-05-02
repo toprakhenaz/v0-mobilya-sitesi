@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import HeroCarousel from "@/components/hero-carousel"
+import HeroCarouselDynamic from "@/components/hero-carousel-dynamic"
 import ProductCard from "@/components/product-card"
 import { Button } from "@/components/ui/button"
 import { getFeaturedProducts, getSaleProducts, getCategories } from "@/lib/product-service"
@@ -77,7 +77,7 @@ export default function Home() {
 
   return (
     <div>
-      <HeroCarousel />
+      <HeroCarouselDynamic />
 
       {/* Kategoriler - Smaller and at the top */}
       <section className="py-6 bg-gray-50">
@@ -93,7 +93,7 @@ export default function Home() {
                 <Image
                   src={
                     category.image_url ||
-                    `/placeholder.svg?height=300&width=300&query=${encodeURIComponent(category.name + " furniture")}`
+                    `/placeholder.svg?height=300&width=300&query=${encodeURIComponent(category.name + " furniture") || "/placeholder.svg"}`
                   }
                   alt={category.name}
                   fill
