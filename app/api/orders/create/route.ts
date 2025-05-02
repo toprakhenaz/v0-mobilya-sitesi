@@ -9,7 +9,7 @@ const supabaseAdmin = createClient(
 
 export async function POST(request: Request) {
   try {
-    const { userId, cartItems, shippingAddress, contactPhone } = await request.json()
+    const { userId, cartItems, shippingAddress, contactPhone, guestEmail } = await request.json()
 
     // Calculate total amount
     const subtotal = cartItems.reduce((total, item) => {
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     const shipping = subtotal > 5000 ? 0 : 150
     const finalTotal = subtotal + shipping
 
-    // Create order data object without guest_phone field
+    // Create order data object
     const orderData = {
       user_id: userId,
       total_amount: finalTotal,
@@ -33,6 +33,7 @@ export async function POST(request: Request) {
       shipping_postal_code: shippingAddress.postal_code,
       shipping_country: shippingAddress.country,
       contact_phone: contactPhone,
+      guest_email: !userId && guestEmail ? guestEmail : null,
     }
 
     // Create order using admin client
