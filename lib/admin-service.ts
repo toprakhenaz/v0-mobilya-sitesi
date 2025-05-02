@@ -51,13 +51,18 @@ export type OrderItem = {
 }
 
 // Admin authentication
+// adminLogin fonksiyonunu daha güvenilir hale getirelim ve hata ayıklama ekleyelim
+
 export async function adminLogin(
   email: string,
   password: string,
 ): Promise<{ user: AdminUser | null; error: string | null }> {
   try {
-    // Simulate admin login (replace with actual authentication logic)
-    if (email === "admin@divonahome.com" && password === "password") {
+    console.log("Admin giriş denemesi:", email) // Giriş denemesini konsola yazdır
+
+    // Giriş bilgilerini kontrol et (büyük/küçük harf duyarsız e-posta kontrolü)
+    if (email.toLowerCase() === "admin@divonahome.com" && password === "password") {
+      console.log("Giriş başarılı")
       const user = {
         id: 1,
         email: "admin@divonahome.com",
@@ -69,6 +74,7 @@ export async function adminLogin(
       }
       return { user: user, error: null }
     } else {
+      console.log("Giriş başarısız: Geçersiz kimlik bilgileri")
       return { user: null, error: "Geçersiz e-posta veya şifre" }
     }
   } catch (error) {

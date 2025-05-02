@@ -20,7 +20,12 @@ export default function AdminLoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log("Giriş denemesi:", email, password) // Giriş bilgilerini konsola yazdır
     await login(email, password)
+    // Giriş işlemi sonrası durumu kontrol et
+    setTimeout(() => {
+      console.log("Giriş sonrası durum:", { error, loading })
+    }, 100)
   }
 
   return (

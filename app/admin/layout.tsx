@@ -16,13 +16,13 @@ function AdminLayoutWrapper({ children }: { children: React.ReactNode }) {
 
   // Login sayfasında sidebar ve header gösterme
   if (pathname === "/admin/login") {
-    return <>{children}</>
+    return <div className="min-h-screen bg-gray-50">{children}</div>
   }
 
   // Yükleme durumunda loading göster
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     )
@@ -48,8 +48,10 @@ function AdminLayoutWrapper({ children }: { children: React.ReactNode }) {
 // Ana layout component
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AdminProvider>
-      <AdminLayoutWrapper>{children}</AdminLayoutWrapper>
-    </AdminProvider>
+    <div className="min-h-screen bg-gray-50">
+      <AdminProvider>
+        <AdminLayoutWrapper>{children}</AdminLayoutWrapper>
+      </AdminProvider>
+    </div>
   )
 }

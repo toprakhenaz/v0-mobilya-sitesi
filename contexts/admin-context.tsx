@@ -22,14 +22,17 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user is logged in from localStorage
-    const storedUser = localStorage.getItem("adminUser")
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser))
-      } catch (e) {
-        console.error("Stored user data is invalid", e)
-        localStorage.removeItem("adminUser")
+    // Check if we're in the browser environment
+    if (typeof window !== "undefined") {
+      // Check if user is logged in from localStorage
+      const storedUser = localStorage.getItem("adminUser")
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser))
+        } catch (e) {
+          console.error("Stored user data is invalid", e)
+          localStorage.removeItem("adminUser")
+        }
       }
     }
     setLoading(false)
@@ -44,11 +47,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
       if (error || !user) {
         setError(error || "Giriş başarısız")
+        setLoading(false)
         return
       }
 
       setUser(user)
-      localStorage.setItem("adminUser", JSON.stringify(user))
+      if (typeof window !== "undefined") {
+        localStorage.setItem("adminUser", JSON.stringify(user))
+      }
       router.push("/admin/dashboard")
     } catch (e) {
       console.error("Login error", e)
@@ -60,7 +66,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     setUser(null)
-    localStorage.removeItem("adminUser")
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("adminUser")
+    }
     router.push("/admin/login")
   }
 
