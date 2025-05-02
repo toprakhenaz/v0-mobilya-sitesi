@@ -1,64 +1,161 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Grid, ShoppingBag, User } from "lucide-react"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Menu, Search, Package, X, Info, Phone, FileText, Shield, HelpCircle, MapPin } from "lucide-react"
 import { useCart } from "@/contexts/cart-context"
 
 export default function MobileNav() {
   const pathname = usePathname()
   const { cartItems } = useCart()
+  const [isOpen, setIsOpen] = useState(false)
 
   // Calculate total quantity of items in cart
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0)
 
+  const closeMenu = () => setIsOpen(false)
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 md:hidden">
-      <div className="flex items-center justify-around h-16">
-        <Link
-          href="/"
-          className={`flex flex-col items-center justify-center w-1/4 h-full ${
-            pathname === "/" ? "text-primary" : "text-gray-600"
-          }`}
-        >
-          <Home className="h-5 w-5" />
-          <span className="text-xs mt-1">Ana Sayfa</span>
-        </Link>
-        <Link
-          href="/kategoriler"
-          className={`flex flex-col items-center justify-center w-1/4 h-full ${
-            pathname === "/kategoriler" ? "text-primary" : "text-gray-600"
-          }`}
-        >
-          <Grid className="h-5 w-5" />
-          <span className="text-xs mt-1">Kategoriler</span>
-        </Link>
-        <Link
-          href="/sepet"
-          className={`flex flex-col items-center justify-center w-1/4 h-full ${
-            pathname === "/sepet" ? "text-primary" : "text-gray-600"
-          }`}
-        >
-          <div className="relative">
-            <ShoppingBag className="h-5 w-5" />
-            {cartItemCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {cartItemCount}
-              </span>
-            )}
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" className="md:hidden">
+          <Menu className="h-5 w-5" />
+          <span className="sr-only">Menü</span>
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="p-0">
+        <SheetHeader className="border-b p-4">
+          <SheetTitle className="flex justify-between items-center">
+            <span>Menü</span>
+            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </SheetTitle>
+        </SheetHeader>
+        <div className="py-4 px-4">
+          <div className="mb-6">
+            <form className="relative w-full ">
+              <Input placeholder="Ürün ara..." />
+              <Button type="submit" size="icon" className="w-10 absolute right-0 top-0 h-full rounded-full">
+                <Search className="h-4 w-4" />
+                <span className="sr-only">Ara</span>
+              </Button>
+            </form>
           </div>
-          <span className="text-xs mt-1">Sepetim</span>
-        </Link>
-        <Link
-          href="/hesabim"
-          className={`flex flex-col items-center justify-center w-1/4 h-full ${
-            pathname.startsWith("/hesabim") ? "text-primary" : "text-gray-600"
-          }`}
-        >
-          <User className="h-5 w-5" />
-          <span className="text-xs mt-1">Hesabım</span>
-        </Link>
-      </div>
-    </div>
+          <nav className="space-y-1">
+            <Link href="/urunler" className="block py-2 px-3 rounded-md hover:bg-gray-100" onClick={closeMenu}>
+              Tüm Ürünler
+            </Link>
+            <Link href="/yeni-urunler" className="block py-2 px-3 rounded-md hover:bg-gray-100" onClick={closeMenu}>
+              <span className="text-red-500 font-medium flex items-center">
+                Yeni Ürünler
+                <span className="ml-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded">Yeni</span>
+              </span>
+            </Link>
+            <Link
+              href="/kampanyali-urunler"
+              className="block py-2 px-3 rounded-md hover:bg-gray-100"
+              onClick={closeMenu}
+            >
+              Kampanyalı Ürünler
+            </Link>
+            <Link href="/siparis-takibi" className="block py-2 px-3 rounded-md hover:bg-gray-100" onClick={closeMenu}>
+              <span className="flex items-center">
+                <Package className="h-4 w-4 mr-2" />
+                Sipariş Takibi
+              </span>
+            </Link>
+            <Link href="/sepet" className="block py-2 px-3 rounded-md hover:bg-gray-100" onClick={closeMenu}>
+              Sepetim ({cartItemCount})
+            </Link>
+
+            {/* Kurumsal Section */}
+            <div className="mt-6 pt-4 border-t">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2 px-3">Kurumsal</h3>
+              <Link
+                href="/hakkimizda"
+                className="block py-2 px-3 rounded-md hover:bg-gray-100 flex items-center"
+                onClick={closeMenu}
+              >
+                <Info className="h-4 w-4 mr-2" />
+                Hakkımızda
+              </Link>
+              <Link
+                href="/iletisim"
+                className="block py-2 px-3 rounded-md hover:bg-gray-100 flex items-center"
+                onClick={closeMenu}
+              >
+                <Phone className="h-4 w-4 mr-2" />
+                İletişim
+              </Link>
+              <Link
+                href="/sikca-sorulan-sorular"
+                className="block py-2 px-3 rounded-md hover:bg-gray-100 flex items-center"
+                onClick={closeMenu}
+              >
+                <HelpCircle className="h-4 w-4 mr-2" />
+                Sıkça Sorulan Sorular
+              </Link>
+              <Link
+                href="/magaza-konumlari"
+                className="block py-2 px-3 rounded-md hover:bg-gray-100 flex items-center"
+                onClick={closeMenu}
+              >
+                <MapPin className="h-4 w-4 mr-2" />
+                Mağaza Konumları
+              </Link>
+            </div>
+
+            {/* Yasal Section */}
+            <div className="mt-4 pt-4 border-t">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2 px-3">Yasal</h3>
+              <Link
+                href="/kvkk"
+                className="block py-2 px-3 rounded-md hover:bg-gray-100 flex items-center"
+                onClick={closeMenu}
+              >
+                <Shield className="h-4 w-4 mr-2" />
+                KVKK
+              </Link>
+              <Link
+                href="/gizlilik-politikasi"
+                className="block py-2 px-3 rounded-md hover:bg-gray-100 flex items-center"
+                onClick={closeMenu}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Gizlilik Politikası
+              </Link>
+              <Link
+                href="/kullanim-kosullari"
+                className="block py-2 px-3 rounded-md hover:bg-gray-100 flex items-center"
+                onClick={closeMenu}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Kullanım Koşulları
+              </Link>
+              <Link
+                href="/iade-kosullari"
+                className="block py-2 px-3 rounded-md hover:bg-gray-100 flex items-center"
+                onClick={closeMenu}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                İade Koşulları
+              </Link>
+            </div>
+
+            {/* Login/Register at the bottom */}
+            <div className="mt-6 pt-4 border-t">
+              <Link href="/giris-yap" className="block py-2 px-3 rounded-md hover:bg-gray-100" onClick={closeMenu}>
+                Giriş Yap / Üye Ol
+              </Link>
+            </div>
+          </nav>
+        </div>
+      </SheetContent>
+    </Sheet>
   )
 }

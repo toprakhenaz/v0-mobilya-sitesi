@@ -272,15 +272,6 @@ export default function Footer() {
             </div>
             <div className="w-12 h-12 overflow-hidden rounded-full border-2 border-gray-200 hover:border-primary transition-all">
               <Image
-                src="/flags/uk-flag.png"
-                alt="İngiltere"
-                width={48}
-                height={48}
-                className="object-cover w-full h-full"
-              />
-            </div>
-            <div className="w-12 h-12 overflow-hidden rounded-full border-2 border-gray-200 hover:border-primary transition-all">
-              <Image
                 src="/flags/france-flag.png"
                 alt="Fransa"
                 width={48}
@@ -290,8 +281,17 @@ export default function Footer() {
             </div>
             <div className="w-12 h-12 overflow-hidden rounded-full border-2 border-gray-200 hover:border-primary transition-all">
               <Image
-                src="/flags/netherlands-flag.png"
-                alt="Hollanda"
+                src="/flags/ukraine-flag.png"
+                alt="Ukrayna"
+                width={48}
+                height={48}
+                className="object-cover w-full h-full"
+              />
+            </div>
+            <div className="w-12 h-12 overflow-hidden rounded-full border-2 border-gray-200 hover:border-primary transition-all">
+              <Image
+                src="/flags/belgium-flag.png"
+                alt="Belçika"
                 width={48}
                 height={48}
                 className="object-cover w-full h-full"
