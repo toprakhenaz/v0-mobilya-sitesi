@@ -50,15 +50,78 @@ export default function Footer() {
       {/* Main Footer */}
       <div className="container-custom py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Logo ve Açıklama */}
+          {/* Logo ve İletişim */}
           <div className="md:col-span-1">
             <Link href="/" className="flex items-center">
               <Logo size="medium" className="mb-4" />
             </Link>
-            <p className="text-gray-600 text-sm">
+            <p className="text-gray-600 text-sm mb-4">
               Divona Home, bahçe mobilyaları ve dış mekan dekorasyonu konusunda Türkiye'nin önde gelen markasıdır.
               Kaliteli ve şık ürünlerimizle bahçenizi güzelleştiriyoruz.
             </p>
+
+            {/* İletişim Bilgileri - Mobil ve Desktop */}
+            <div className="mt-4">
+              <div className="flex items-center mb-2">
+                <div className="bg-primary/10 rounded-full p-2 mr-3">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-primary"
+                  >
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-medium">Müşteri Hizmetleri</h4>
+                  <p>0 850 305 86 07</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-500 ml-12">İmişehir OSB 2001 Cadde No:16 Odunpazarı / ESKİŞEHİR</p>
+            </div>
+
+            {/* Sosyal Medya - Mobil ve Desktop */}
+            <div className="flex space-x-3 mt-4">
+              <Link
+                href="https://facebook.com"
+                className="bg-blue-600 text-white rounded-full p-2 hover:opacity-80 transition"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.77 7.46H14.5v-1.9c0-.9.6-1.1 1-1.1h3V.5h-4.33C10.24.5 9.5 3.44 9.5 5.32v2.15h-3v4h3v12h5v-12h3.85l.42-4z" />
+                </svg>
+              </Link>
+              <Link
+                href="https://instagram.com"
+                className="bg-pink-600 text-white rounded-full p-2 hover:opacity-80 transition"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                </svg>
+              </Link>
+              <Link
+                href="https://youtube.com"
+                className="bg-red-600 text-white rounded-full p-2 hover:opacity-80 transition"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" />
+                </svg>
+              </Link>
+              <Link
+                href="https://linkedin.com"
+                className="bg-blue-700 text-white rounded-full p-2 hover:opacity-80 transition"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M4.98 3.5c0 1.381-1.11 2.5-2.48 2.5s-2.48-1.119-2.48-2.5c0-1.38 1.11-2.5 2.48-2.5s2.48 1.12 2.48 2.5zm.02 4.5h-5v16h5v-16zm7.982 0h-4.968v16h4.969v-8.399c0-4.67 6.029-5.052 6.029 0v8.399h4.988v-10.131c0-7.88-8.922-7.593-11.018-3.714v-2.155z" />
+                </svg>
+              </Link>
+            </div>
           </div>
 
           {/* Kategoriler */}
@@ -123,8 +186,13 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/siparis-takibi" className="text-gray-600 hover:text-primary">
-                  Sipariş Takibi
+                <Link href="/sikca-sorulan-sorular" className="text-gray-600 hover:text-primary">
+                  Sıkça Sorulan Sorular
+                </Link>
+              </li>
+              <li>
+                <Link href="/magaza-konumlari" className="text-gray-600 hover:text-primary">
+                  Mağaza Konumları
                 </Link>
               </li>
             </ul>
@@ -149,6 +217,11 @@ export default function Footer() {
                   <li>
                     <Link href="/hesabim/favorilerim" className="text-gray-600 hover:text-primary">
                       Favorilerim
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/hesabim/adreslerim" className="text-gray-600 hover:text-primary">
+                      Adreslerim
                     </Link>
                   </li>
                 </>
@@ -178,26 +251,27 @@ export default function Footer() {
         {/* Payment Methods */}
         <div className="mt-8 pt-8 border-t">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-600 text-sm mb-4 md:mb-0">© 2023 Divona Home. Tüm hakları saklıdır.</p>
-            <div className="flex flex-wrap justify-center gap-8 items-center">
-              {/* SVG Visa logo */}
-              <div className="h-10 w-20">
-                <VisaLogo />
-              </div>
-
-              {/* SVG Mastercard logo */}
-              <div className="h-10 w-20">
-                <MastercardLogo />
-              </div>
+            <p className="text-gray-600 text-sm mb-4 md:mb-0">
+              © {new Date().getFullYear()} Divona Home. Tüm hakları saklıdır.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4 items-center">
+              <Image src="/visa-logo-new.png" alt="Visa" width={60} height={40} className="object-contain" />
+              <Image src="/mastercard-logo.png" alt="Mastercard" width={60} height={40} className="object-contain" />
+              <Image
+                src="/american-express-logo.png"
+                alt="American Express"
+                width={60}
+                height={40}
+                className="object-contain"
+              />
+              <Image src="/troy-logo.png" alt="Troy" width={60} height={40} className="object-contain" />
+              <Image src="/iyzico-logo.png" alt="iyzico" width={60} height={40} className="object-contain" />
             </div>
           </div>
           <div className="mt-6 flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-4 md:mb-0">
               <Link href="https://etbis.gov.tr" target="_blank" rel="noopener noreferrer" className="mr-4">
-                {/* ETBIS logo */}
-                <div className="h-16 w-16 relative">
-                  <Image src="/etbis-logo-new.png" alt="ETBIS" fill className="object-contain" />
-                </div>
+                <Image src="/etbis-logo-new.png" alt="ETBIS" width={64} height={64} className="object-contain" />
               </Link>
               <div>
                 <p className="text-xs text-gray-500">ETBIS - E-Ticaret Bilgi Sistemi</p>
@@ -220,55 +294,95 @@ export default function Footer() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Navigation - Fixed Bottom */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t z-40 md:hidden">
+        <div className="grid grid-cols-4">
+          <Link href="/" className="flex flex-col items-center justify-center p-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="mb-1"
+            >
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span className="text-xs">Ana Sayfa</span>
+          </Link>
+          <Link href="/kategoriler" className="flex flex-col items-center justify-center p-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="mb-1"
+            >
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span className="text-xs">Kategoriler</span>
+          </Link>
+          <Link href="/hesabim/siparislerim" className="flex flex-col items-center justify-center p-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="mb-1"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span className="text-xs">Siparişlerim</span>
+          </Link>
+          <Link href="/sepet" className="flex flex-col items-center justify-center p-2">
+            <div className="relative">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="mb-1"
+              >
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+              </svg>
+              <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                0
+              </span>
+            </div>
+            <span className="text-xs">Sepet</span>
+          </Link>
+        </div>
+      </div>
     </footer>
-  )
-}
-
-// SVG Visa Logo Component
-function VisaLogo() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 324" className="w-full h-full">
-      <path
-        fill="#00579F"
-        d="M651.3,0.5h-99.4c-27.7,0-48.3,7.5-60.5,35.2L386.7,323.4h99.7c0,0,12.4-32.7,15.2-39.9c8.3,0,82.2,0.1,92.7,0.1
-        c2.2,9.3,8.7,39.8,8.7,39.8h88.1L651.3,0.5z M533.5,220.6c6-15.3,28.8-74.3,28.8-74.3c-0.4,0.7,5.9-15.4,9.6-25.4l4.9,22.8
-        c0,0,13.8,63.3,16.7,76.8C575.8,220.6,549.3,220.6,533.5,220.6z"
-      />
-      <path
-        fill="#00579F"
-        d="M355.7,0.5l-93.2,236.7l-10-49.9c-17.4-56.1-71.8-116.9-132.7-147.1l85.9,282.8l101.6-0.1L434.3,0.5H355.7z"
-      />
-      <path
-        fill="#FAA61A"
-        d="M197.8,0.5H0.5L0,8.2c152.2,36.8,253,125.7,294.7,232.4L252.2,35.7C245.3,13.1,224.7,1.4,197.8,0.5z"
-      />
-      <path
-        fill="#00579F"
-        d="M937.1,0.5h-77.9c-17.7,0-31,4.8-38.8,22.4l-123.3,300.5h99.5c0,0,14.3-37.7,17.5-46c9.5,0,95.7,0,107.9,0
-        c2.5,10.7,10.1,46,10.1,46h87.9L937.1,0.5z M842.4,220.6c7-17.8,33.6-86.3,33.6-86.3c-0.5,0.8,6.9-17.9,11.2-29.6l5.7,26.6
-        c0,0,16.1,73.8,19.5,89.3C890.9,220.6,860.1,220.6,842.4,220.6z"
-      />
-    </svg>
-  )
-}
-
-// SVG Mastercard Logo Component
-function MastercardLogo() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 131.39 86.9" className="w-full h-full">
-      <path d="M48.37,15.14h34.66V72.31H48.37Z" fill="#ff5f00" />
-      <path
-        d="M51.94,43.72a36.47,36.47,0,0,1,13.75-28.58,36.37,36.37,0,0,0-45.15,5.72,36.4,36.4,0,0,0-8.24,39.8,36.38,36.38,0,0,0,53.39,11.49,36.41,36.41,0,0,1-13.75-28.43Z"
-        fill="#eb001b"
-      />
-      <path
-        d="M120.5,65.76V64.93h.29v-.15h-.74v.15h.29v.83Zm1.48,0v-1h-.23l-.26.71-.26-.71h-.23v1h.16V65l.24.68h.17L121.82,65v.74Z"
-        fill="#f79e1b"
-      />
-      <path
-        d="M123.94,43.72a36.42,36.42,0,0,1-59.25,28.43,36.38,36.38,0,0,0,0-56.86,36.42,36.42,0,0,1,59.25,28.43Z"
-        fill="#f79e1b"
-      />
-    </svg>
   )
 }

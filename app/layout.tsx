@@ -5,6 +5,10 @@ import { Inter } from "next/font/google"
 import { SiteSettingsProvider } from "@/components/admin/site-settings-provider"
 import { CartProvider } from "@/contexts/cart-context"
 import { AuthProvider } from "@/contexts/auth-context"
+import Header from "@/components/header"
+import Footer from "@/components/footer"
+import { Toaster } from "@/components/ui/toaster"
+import WhatsAppButton from "@/components/whatsapp-button"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -24,7 +28,15 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <CartProvider>
-            <SiteSettingsProvider>{children}</SiteSettingsProvider>
+            <SiteSettingsProvider>
+              <div className="flex flex-col min-h-screen">
+                <Header />
+                <main className="flex-grow">{children}</main>
+                <Footer />
+                <WhatsAppButton />
+                <Toaster />
+              </div>
+            </SiteSettingsProvider>
           </CartProvider>
         </AuthProvider>
       </body>
