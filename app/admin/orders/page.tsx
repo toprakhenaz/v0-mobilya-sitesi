@@ -42,24 +42,36 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     fetchOrders()
-  }, [currentPage, searchTerm, statusFilter])
+  }, [currentPage, statusFilter])
 
+  // Arama yapıldığında çalışacak fonksiyon
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    setCurrentPage(1) // Arama yapıldığında ilk sayfaya dön
+    fetchOrders() // Aramayı gerçekleştir
+  }
+
+  // fetchOrders fonksiyonunu güncelleyelim
   async function fetchOrders() {
     setLoading(true)
     try {
+      console.log("Siparişler alınıyor...", { currentPage, itemsPerPage, statusFilter, searchTerm })
+
       // Merkezi admin servisini kullanarak siparişleri al
-      const { orders, totalCount } = await getOrders(
+      const result = await getOrders(
         currentPage,
         itemsPerPage,
         statusFilter !== "all" ? statusFilter : undefined,
         searchTerm || undefined,
       )
 
+      console.log("getOrders'dan dönen sonuç:", result)
+
       // Sayfalama için toplam sayfa sayısını hesapla
-      setTotalPages(Math.ceil(totalCount / itemsPerPage))
-      setOrders(orders)
+      setTotalPages(Math.ceil(result.totalCount / itemsPerPage))
+      setOrders(result.orders)
     } catch (error) {
-      console.error("Siparişler alınırken hata oluştu:", error)
+      console.error("Siparişler alınırken hata:", error)
       toast({
         variant: "destructive",
         title: "Hata",
@@ -68,11 +80,6 @@ export default function AdminOrdersPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    setCurrentPage(1) // Arama yapıldığında ilk sayfaya dön
   }
 
   const getStatusBadge = (status: string) => {

@@ -31,15 +31,23 @@ export type ProductImage = {
 }
 
 export type Order = {
-  id: string
-  created_at: string
-  user_id: string
+  id: number
+  user_id: string | null
   total_amount: number
   status: string
   payment_method: string
+  payment_status: string
   shipping_address: string
-  billing_address: string
-  items: any[]
+  shipping_city: string
+  shipping_postal_code: string
+  shipping_country: string
+  contact_phone: string
+  created_at: string
+  updated_at: string
+  guest_email: string | null
+  tracking_number: string | null
+  user_email?: string
+  items?: any[]
 }
 
 export type OrderItem = {
@@ -51,8 +59,6 @@ export type OrderItem = {
 }
 
 // Admin authentication
-// adminLogin fonksiyonunu daha güvenilir hale getirelim ve hata ayıklama ekleyelim
-
 export async function adminLogin(
   email: string,
   password: string,
@@ -450,14 +456,16 @@ export async function getOrders(
   searchTerm?: string,
 ): Promise<{ orders: Order[]; totalCount: number }> {
   try {
+    console.log("getOrders çağrıldı:", { page, itemsPerPage, status, searchTerm })
+
     let query = supabase.from("orders").select("*", { count: "exact" })
 
-    if (status) {
+    if (status && status !== "all") {
       query = query.eq("status", status)
     }
 
     if (searchTerm) {
-      query = query.ilike("id", `%${searchTerm}%`)
+      query = query.ilike("shipping_address", `%${searchTerm}%`)
     }
 
     const from = (page - 1) * itemsPerPage
@@ -470,9 +478,68 @@ export async function getOrders(
       throw new Error(error.message)
     }
 
-    return { orders: data as Order[], totalCount: count || 0 }
+    const orders =
+      data?.map((order) => ({
+        ...order,
+        user_email: order.guest_email || "Misafir Kullanıcı",
+      })) || []
+
+    return {
+      orders: orders as Order[],
+      totalCount: count || 0,
+    }
   } catch (error) {
     console.error("Siparişler alınırken hata:", error)
     return { orders: [], totalCount: 0 }
+  }
+}
+
+// Get order details
+export async function getOrderDetails(id: number): Promise<Order | null> {
+  try {
+    const { data: order, error: orderError } = await supabase.from("orders").select("*").eq("id", id).single()
+
+    if (orderError) {
+      console.error(`Sipariş (ID: ${id}) alınırken hata:`, orderError.message)
+      return null
+    }
+
+    const { data: items, error: itemsError } = await supabase
+      .from("order_items")
+      .select("*, product:products(name, price, image_url)")
+      .eq("order_id", id)
+
+    if (itemsError) {
+      console.error(`Sipariş öğeleri (Sipariş ID: ${id}) alınırken hata:`, itemsError.message)
+    }
+
+    return {
+      ...order,
+      user_email: order.guest_email || "Misafir Kullanıcı",
+      items: items || [],
+    } as Order
+  } catch (error) {
+    console.error(`Sipariş (ID: ${id}) alınırken hata:`, error)
+    return null
+  }
+}
+
+// Update order status
+export async function updateOrderStatus(id: number, status: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from("orders")
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", id)
+
+    if (error) {
+      console.error(`Sipariş durumu (ID: ${id}) güncellenirken hata:`, error.message)
+      return false
+    }
+
+    return true
+  } catch (error) {
+    console.error(`Sipariş durumu (ID: ${id}) güncellenirken hata:`, error)
+    return false
   }
 }
