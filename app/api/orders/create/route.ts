@@ -21,31 +21,27 @@ export async function POST(request: Request) {
     const shipping = subtotal > 5000 ? 0 : 150
     const finalTotal = subtotal + shipping
 
+    // Create order data object without guest_phone field
+    const orderData = {
+      user_id: userId,
+      total_amount: finalTotal,
+      status: "pending",
+      payment_method: "bank_transfer",
+      payment_status: "pending",
+      shipping_address: shippingAddress.address,
+      shipping_city: shippingAddress.city,
+      shipping_postal_code: shippingAddress.postal_code,
+      shipping_country: shippingAddress.country,
+      contact_phone: contactPhone,
+    }
+
     // Create order using admin client
-    const { data: orderData, error: orderError } = await supabaseAdmin
-      .from("orders")
-      .insert({
-        user_id: userId,
-        guest_phone: !userId ? contactPhone : undefined,
-        total_amount: finalTotal,
-        status: "pending",
-        payment_method: "bank_transfer",
-        payment_status: "pending",
-        shipping_address: shippingAddress.address,
-        shipping_city: shippingAddress.city,
-        shipping_postal_code: shippingAddress.postal_code,
-        shipping_country: shippingAddress.country,
-        contact_phone: contactPhone,
-      })
-      .select()
-      .single()
+    const { data: order, error: orderError } = await supabaseAdmin.from("orders").insert(orderData).select().single()
 
     if (orderError) {
       console.error("Order creation error:", orderError)
       return NextResponse.json({ error: orderError.message }, { status: 400 })
     }
-
-    const order = orderData
 
     // Create order items using admin client
     const orderItems = cartItems.map((item) => ({

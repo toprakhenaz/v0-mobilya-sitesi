@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { AlertCircle, Loader2, ShoppingCart } from "lucide-react"
+import { Loader2, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import CartItem from "@/components/cart/cart-item"
 import { useCart } from "@/contexts/cart-context"
@@ -87,28 +87,6 @@ export default function Cart() {
                       <span className="text-xl">{total.toLocaleString("tr-TR")} ₺</span>
                     </div>
                   </div>
-                </div>
-
-                {/* IBAN Info */}
-                <div className="bg-gray-50 p-4 rounded-md mb-6">
-                  <h3 className="font-medium mb-2">Banka Hesap Bilgileri</h3>
-                  <p className="text-sm mb-1">
-                    <strong>Banka:</strong> Örnek Bank
-                  </p>
-                  <p className="text-sm mb-1">
-                    <strong>Hesap Sahibi:</strong> Divona Home Ltd. Şti.
-                  </p>
-                  <p className="text-sm">
-                    <strong>IBAN:</strong> TR12 3456 7890 1234 5678 9012 34
-                  </p>
-                </div>
-
-                {/* Payment Note */}
-                <div className="flex items-start bg-yellow-50 p-3 rounded-md mb-6">
-                  <AlertCircle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5" />
-                  <p className="text-sm text-yellow-800">
-                    Ödemenizi yaptıktan sonra sipariş numaranızı açıklama kısmına yazmayı unutmayınız.
-                  </p>
                 </div>
 
                 {/* Checkout Button */}

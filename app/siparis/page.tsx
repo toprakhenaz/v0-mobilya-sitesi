@@ -162,6 +162,16 @@ export default function Checkout() {
       return
     }
 
+    // Check if receipt file is uploaded
+    if (!receiptFile) {
+      toast({
+        title: "Hata",
+        description: "Lütfen ödeme dekontunuzu yükleyin.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -562,7 +572,7 @@ export default function Checkout() {
                 {/* Dekont Yükleme */}
                 <div className="mb-4">
                   <Label htmlFor="receipt" className="block mb-2">
-                    Dekont Yükleme (İsteğe Bağlı)
+                    Dekont Yükleme <span className="text-red-500">*</span>
                   </Label>
                   <div className="flex items-center">
                     <input
@@ -572,6 +582,7 @@ export default function Checkout() {
                       onChange={handleFileChange}
                       className="hidden"
                       accept="image/*,.pdf"
+                      required
                     />
                     <Button
                       type="button"
@@ -589,8 +600,7 @@ export default function Checkout() {
                     )}
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    Ödemenizi yaptıktan sonra dekontu yükleyebilirsiniz. Bu işlem siparişinizin daha hızlı onaylanmasını
-                    sağlayacaktır.
+                    Ödemenizi yaptıktan sonra dekontu yüklemeniz gerekmektedir.
                   </p>
                 </div>
 

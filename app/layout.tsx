@@ -1,22 +1,16 @@
 import type React from "react"
+import "./globals.css"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import "./globals.css"
-import Header from "@/components/header"
-import Footer from "@/components/footer"
-import MobileNav from "@/components/mobile-nav"
-import WhatsAppButton from "@/components/whatsapp-button"
-import { ThemeProvider } from "@/components/theme-provider"
-import { AuthProvider } from "@/contexts/auth-context"
+import { SiteSettingsProvider } from "@/components/admin/site-settings-provider"
 import { CartProvider } from "@/contexts/cart-context"
-import { Toaster } from "@/components/ui/toaster"
+import { AuthProvider } from "@/contexts/auth-context"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Divona Home | Kaliteli Bahçe Mobilyaları",
-  description:
-    "Bahçeniz için en kaliteli mobilyalar, oturma grupları, masa takımları ve daha fazlası uygun fiyatlarla.",
+  title: "Divona Home - Bahçe Mobilyaları",
+  description: "Divona Home, bahçe mobilyaları ve dış mekan dekorasyonu konusunda Türkiye'nin önde gelen markasıdır.",
     generator: 'v0.dev'
 }
 
@@ -28,18 +22,11 @@ export default function RootLayout({
   return (
     <html lang="tr">
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="light">
-          <AuthProvider>
-            <CartProvider>
-              <Header />
-              <main className="min-h-screen pb-16 md:pb-0">{children}</main>
-              <Footer />
-              <MobileNav />
-              <WhatsAppButton />
-              <Toaster />
-            </CartProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <AuthProvider>
+          <CartProvider>
+            <SiteSettingsProvider>{children}</SiteSettingsProvider>
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   )

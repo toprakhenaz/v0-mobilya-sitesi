@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { CheckCircle, Loader2, Copy } from "lucide-react"
+import { CheckCircle, Loader2, Copy, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getOrderById } from "@/lib/order-service"
 import { useAuth } from "@/contexts/auth-context"
@@ -17,6 +17,7 @@ export default function OrderConfirmation() {
 
   const [order, setOrder] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -43,11 +44,16 @@ export default function OrderConfirmation() {
   }, [orderId, router, user])
 
   const copyOrderNumber = () => {
-    navigator.clipboard.writeText(orderId || "")
-    toast({
-      title: "Kopyalandı",
-      description: "Sipariş numarası panoya kopyalandı.",
-    })
+    if (orderId) {
+      navigator.clipboard.writeText(orderId)
+      setCopied(true)
+      toast({
+        title: "Kopyalandı",
+        description: "Sipariş numarası panoya kopyalandı.",
+      })
+
+      setTimeout(() => setCopied(false), 2000)
+    }
   }
 
   if (isLoading) {
@@ -74,27 +80,42 @@ export default function OrderConfirmation() {
     <div className="py-6">
       <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto">
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <div className="flex flex-col items-center text-center mb-6">
-              <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-              <h1 className="text-2xl font-bold mb-2">Siparişiniz Alındı</h1>
-              <p className="text-gray-600">
-                Siparişiniz başarıyla oluşturuldu. Sipariş detayları aşağıda yer almaktadır.
-              </p>
-            </div>
+          {/* Success Message Card */}
+          <div className="bg-white rounded-lg shadow-lg p-8 mb-8 text-center">
+            <div className="flex flex-col items-center">
+              <div className="bg-green-100 p-4 rounded-full mb-4">
+                <CheckCircle className="h-16 w-16 text-green-600" />
+              </div>
+              <h1 className="text-3xl font-bold mb-2">Siparişiniz Alındı!</h1>
+              <p className="text-gray-600 mb-6">Siparişiniz başarıyla oluşturuldu ve sistemimize kaydedildi.</p>
 
-            <div className="border-t border-b py-4 mb-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-sm text-gray-500">Sipariş Numarası</p>
-                  <p className="font-bold">{order.id}</p>
+              <div className="bg-gray-50 w-full max-w-md p-6 rounded-lg mb-6">
+                <p className="text-gray-500 text-sm mb-1">Sipariş Numaranız:</p>
+                <div className="flex items-center justify-center gap-3">
+                  <p className="text-3xl font-bold text-gray-800">{order.id}</p>
+                  <Button variant="outline" size="sm" onClick={copyOrderNumber} className="flex items-center">
+                    <Copy className="h-4 w-4 mr-1" /> {copied ? "Kopyalandı" : "Kopyala"}
+                  </Button>
                 </div>
-                <Button variant="outline" size="sm" onClick={copyOrderNumber}>
-                  <Copy className="h-4 w-4 mr-2" /> Kopyala
+              </div>
+
+              <Link href={`/siparis-takibi?order_id=${order.id}`} className="w-full max-w-md">
+                <Button className="w-full flex items-center justify-center gap-2 mb-4">
+                  <Package className="h-5 w-5" /> Siparişimi Takip Et
                 </Button>
+              </Link>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 max-w-md text-left">
+                <h5 className="text-blue-800 font-medium mb-1">Siparişinizi takip edebilirsiniz</h5>
+                <p className="text-blue-700 text-sm">
+                  Yukarıdaki sipariş numaranız ile istediğiniz zaman siparişinizin durumunu kontrol edebilirsiniz.
+                </p>
               </div>
             </div>
+          </div>
 
+          {/* Order Details Card */}
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
             <div className="mb-6">
               <h2 className="font-bold mb-3">Ödeme Bilgileri</h2>
               <div className="bg-gray-50 p-4 rounded-md">

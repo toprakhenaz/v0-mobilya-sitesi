@@ -7,8 +7,9 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
-  // Ensure product has images array and at least one image
-  const productImage = product.images && product.images.length > 0 ? product.images[0] : "/placeholder.svg?key=2k4jq"
+  // Get the first image from the product's images array
+  // Images are now coming directly from the database via the image_urls field
+  const productImage = product.images && product.images.length > 0 ? product.images[0] : "/placeholder.svg"
 
   return (
     <Link href={`/urun/${product.slug}`} className="group">
@@ -20,6 +21,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
             alt={product.name}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
+            priority={true} // Add priority to ensure images load quickly
           />
 
           {/* Badges */}

@@ -1,6 +1,6 @@
 "use client"
 import Link from "next/link"
-import { FileText, Heart, MapPin, Settings, User } from "lucide-react"
+import { FileText, Heart, MapPin, Settings, User, Package, Star } from "lucide-react"
 
 import {
   Sidebar,
@@ -56,6 +56,22 @@ export function AccountSidebar() {
                     <Link href="/hesabim/favorilerim">
                       <Heart className="h-5 w-5 mr-2" />
                       <span>Favorilerim</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link href="/siparis-takibi">
+                      <Package className="h-5 w-5 mr-2" />
+                      <span>Sipariş Takibi</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link href="/yeni-urunler">
+                      <Star className="h-5 w-5 mr-2" />
+                      <span>Yeni Ürünler</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

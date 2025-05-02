@@ -44,7 +44,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
       >
         <div className="flex justify-between items-center p-4 border-b">
           <h2 className="text-lg font-bold">Menü</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700" aria-label="Close menu">
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             <X className="h-6 w-6" />
           </button>
         </div>
@@ -63,6 +63,16 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 <ChevronRight className="h-5 w-5" />
               </Link>
               <Link
+                href="/yeni-urunler"
+                className={`flex justify-between items-center p-4 border-b ${
+                  pathname === "/yeni-urunler" ? "text-primary" : "text-gray-800"
+                }`}
+                onClick={onClose}
+              >
+                <span className="text-red-500 font-medium">Yeni Ürünler</span>
+                <ChevronRight className="h-5 w-5" />
+              </Link>
+              <Link
                 href="/kampanyali-urunler"
                 className={`flex justify-between items-center p-4 border-b ${
                   pathname === "/kampanyali-urunler" ? "text-primary" : "text-gray-800"
@@ -70,6 +80,16 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 onClick={onClose}
               >
                 <span>Kampanyalı Ürünler</span>
+                <ChevronRight className="h-5 w-5" />
+              </Link>
+              <Link
+                href="/siparis-takibi"
+                className={`flex justify-between items-center p-4 border-b ${
+                  pathname === "/siparis-takibi" ? "text-primary" : "text-gray-800"
+                }`}
+                onClick={onClose}
+              >
+                <span>Sipariş Takibi</span>
                 <ChevronRight className="h-5 w-5" />
               </Link>
               {user && (

@@ -1,25 +1,6 @@
 import { supabase } from "./supabase-client"
 import type { Product } from "./supabase"
 
-// Product images mapping
-const productImages: Record<string, string[]> = {
-  "rattan-bahce-oturma-grubu": ["/products/rattan-bahce-oturma-grubu.jpg", "/products/luxury-sofa-set.png"],
-  "modern-bahce-kose-takimi": ["/products/modern-bahce-kose-takimi.jpg", "/products/luxury-garden-corner-set.png"],
-  "ahsap-masa-takimi": ["/products/ahsap-masa-takimi.jpg", "/products/wooden-table-set.png"],
-  "katlanabilir-sezlong": ["/products/katlanabilir-sezlong.jpg", "/products/garden-lounge.png"],
-  "luks-bahce-kose-takimi": ["/products/luks-bahce-kose-takimi.jpg", "/products/luxury-garden-furniture.png"],
-  "rattan-salincak": ["/products/rattan-salincak.jpg", "/products/rattan-swing.png"],
-  "bahce-semsiyesi": ["/products/bahce-semsiyesi.jpg", "/products/garden-umbrella.png"],
-  "aluminyum-bahce-sandalyesi": ["/products/aluminyum-bahce-sandalyesi.jpg", "/products/designer-chair.png"],
-  "bistro-masa-takimi": ["/bistro-masa-takimi-1.png", "/bistro-masa-takimi-2.png", "/bistro-masa-takimi-3.png"],
-  "eva-masa-takimi": ["/eva-masa-takimi.png", "/eva-masa-takimi-2.png"],
-  "pisa-bistro-rattan": ["/pisa-bistro-rattan.png", "/products/modern-dining-table.png"],
-  "space-garden-furniture": ["/space-garden-furniture.png", "/products/outdoor-dining-set.png"],
-  "pisa-ikili-rattan": ["/pisa-ikili-rattan.png", "/products/premium-bed.png"],
-  "palm-aluminum-rattan": ["/palm-aluminum-rattan.png", "/products/executive-desk.png"],
-  "efes-midi-garden-set": ["/efes-midi-garden-set.png", "/products/patio-umbrella.png"],
-}
-
 // Default image for products without specific images
 const defaultProductImage = "/diverse-products-still-life.png"
 
@@ -82,11 +63,12 @@ export async function getProducts(
       throw error
     }
 
-    // Add images to products
+    // Process products to ensure they have images
     const productsWithImages =
       data?.map((product) => {
-        const slug = product.slug || ""
-        const images = productImages[slug] || [defaultProductImage]
+        // Use image_urls from database if available
+        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
+
         return { ...product, images }
       }) || []
 
@@ -113,9 +95,9 @@ export async function getProductById(id: number): Promise<Product | null> {
       return null
     }
 
-    // Add images to product
-    const slug = data.slug || ""
-    const images = productImages[slug] || [defaultProductImage]
+    // Use image_urls from database if available
+    const images = data.image_urls && data.image_urls.length > 0 ? data.image_urls : [defaultProductImage]
+
     return { ...data, images }
   } catch (error) {
     console.error("Error fetching product by ID:", error)
@@ -136,8 +118,9 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
       return null
     }
 
-    // Add images to product
-    const images = productImages[slug] || [defaultProductImage]
+    // Use image_urls from database if available
+    const images = data.image_urls && data.image_urls.length > 0 ? data.image_urls : [defaultProductImage]
+
     return { ...data, images }
   } catch (error) {
     console.error("Error fetching product by slug:", error)
@@ -192,11 +175,12 @@ export async function getFeaturedProducts(limit = 8): Promise<Product[]> {
       throw error
     }
 
-    // Add images to products
+    // Process products to ensure they have images
     const productsWithImages =
       data?.map((product) => {
-        const slug = product.slug || ""
-        const images = productImages[slug] || [defaultProductImage]
+        // Use image_urls from database if available
+        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
+
         return { ...product, images }
       }) || []
 
@@ -222,11 +206,12 @@ export async function getPromotionalProducts(limit = 8): Promise<Product[]> {
       throw error
     }
 
-    // Add images to products
+    // Process products to ensure they have images
     const productsWithImages =
       data?.map((product) => {
-        const slug = product.slug || ""
-        const images = productImages[slug] || [defaultProductImage]
+        // Use image_urls from database if available
+        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
+
         return { ...product, images }
       }) || []
 
@@ -251,11 +236,12 @@ export async function getRelatedProducts(productId: number, categoryId: number, 
       throw error
     }
 
-    // Add images to products
+    // Process products to ensure they have images
     const productsWithImages =
       data?.map((product) => {
-        const slug = product.slug || ""
-        const images = productImages[slug] || [defaultProductImage]
+        // Use image_urls from database if available
+        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
+
         return { ...product, images }
       }) || []
 
@@ -323,11 +309,12 @@ export async function searchProducts(
       throw error
     }
 
-    // Add images to products
+    // Process products to ensure they have images
     const productsWithImages =
       data?.map((product) => {
-        const slug = product.slug || ""
-        const images = productImages[slug] || [defaultProductImage]
+        // Use image_urls from database if available
+        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
+
         return { ...product, images }
       }) || []
 
@@ -356,11 +343,12 @@ export async function getSaleProducts(limit = 8): Promise<Product[]> {
       throw error
     }
 
-    // Add images to products
+    // Process products to ensure they have images
     const productsWithImages =
       data?.map((product) => {
-        const slug = product.slug || ""
-        const images = productImages[slug] || [defaultProductImage]
+        // Use image_urls from database if available
+        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
+
         return { ...product, images }
       }) || []
 
@@ -368,5 +356,112 @@ export async function getSaleProducts(limit = 8): Promise<Product[]> {
   } catch (error) {
     console.error("Error fetching sale products:", error)
     return []
+  }
+}
+
+// Get new products
+export async function getNewProducts(limit = 24): Promise<Product[]> {
+  try {
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .eq("is_new", true)
+      .order("created_at", { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      throw error
+    }
+
+    // Process products to ensure they have images
+    const productsWithImages =
+      data?.map((product) => {
+        // Use image_urls from database if available
+        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
+
+        return { ...product, images }
+      }) || []
+
+    return productsWithImages
+  } catch (error) {
+    console.error("Error fetching new products:", error)
+    return []
+  }
+}
+
+// Update product images
+export async function updateProductImages(productId: number, imageUrls: string[]): Promise<boolean> {
+  try {
+    const { error } = await supabase.from("products").update({ image_urls: imageUrls }).eq("id", productId)
+
+    if (error) {
+      throw error
+    }
+
+    return true
+  } catch (error) {
+    console.error("Error updating product images:", error)
+    return false
+  }
+}
+
+// Update all product images based on slug patterns
+export async function updateAllProductImages(): Promise<boolean> {
+  try {
+    // Get all products
+    const { data: products, error } = await supabase.from("products").select("id, slug")
+
+    if (error) {
+      throw error
+    }
+
+    // Product image mapping based on slug patterns
+    const imagePatterns = [
+      { pattern: "rattan", images: ["/products/rattan-bahce-oturma-grubu.jpg", "/rattan-garden-furniture.png"] },
+      { pattern: "masa-takimi", images: ["/products/ahsap-masa-takimi.jpg", "/wooden-table-set.png"] },
+      { pattern: "kose-takimi", images: ["/products/luks-bahce-kose-takimi.jpg", "/luxury-garden-corner-set.png"] },
+      { pattern: "salincak", images: ["/products/rattan-salincak.jpg", "/rattan-swing.png"] },
+      { pattern: "semsiye", images: ["/products/bahce-semsiyesi.jpg", "/garden-umbrella.png"] },
+      { pattern: "sandalye", images: ["/products/aluminyum-bahce-sandalyesi.jpg"] },
+      {
+        pattern: "bistro",
+        images: ["/bistro-masa-takimi-1.png", "/bistro-masa-takimi-2.png", "/bistro-masa-takimi-3.png"],
+      },
+      { pattern: "eva", images: ["/eva-masa-takimi.png", "/eva-masa-takimi-2.png"] },
+      { pattern: "pisa", images: ["/pisa-bistro-rattan.png", "/pisa-ikili-rattan.png"] },
+      { pattern: "garden", images: ["/space-garden-furniture.png", "/outdoor-garden-furniture-set.png"] },
+      { pattern: "aluminum", images: ["/palm-aluminum-rattan.png"] },
+      { pattern: "efes", images: ["/efes-midi-garden-set.png"] },
+      { pattern: "sofa", images: ["/products/luxury-sofa-set.png"] },
+      { pattern: "dining", images: ["/products/modern-dining-table.png", "/products/outdoor-dining-set.png"] },
+      { pattern: "desk", images: ["/products/executive-desk.png"] },
+      { pattern: "bed", images: ["/products/premium-bed.png"] },
+      { pattern: "chair", images: ["/products/designer-chair.png"] },
+      { pattern: "patio", images: ["/products/patio-umbrella.png"] },
+      { pattern: "lounge", images: ["/products/garden-lounge.png"] },
+      // Default images for products that don't match any pattern
+      { pattern: "", images: ["/diverse-products-still-life.png", "/abstract-geometric-shapes.png"] },
+    ]
+
+    // Update each product
+    for (const product of products || []) {
+      // Find matching image pattern
+      let matchedImages = ["/diverse-products-still-life.png"] // Default image
+
+      for (const pattern of imagePatterns) {
+        if (pattern.pattern && product.slug.includes(pattern.pattern)) {
+          matchedImages = pattern.images
+          break
+        }
+      }
+
+      // Update product with matched images
+      await supabase.from("products").update({ image_urls: matchedImages }).eq("id", product.id)
+    }
+
+    return true
+  } catch (error) {
+    console.error("Error updating all product images:", error)
+    return false
   }
 }

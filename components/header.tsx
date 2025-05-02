@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Menu, Search, ShoppingBag, User, LogOut, Heart } from "lucide-react"
+import { Menu, Search, ShoppingBag, User, LogOut, Heart, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
 import { useAuth } from "@/contexts/auth-context"
@@ -53,11 +53,7 @@ export default function Header() {
               <SheetHeader className="border-b p-4">
                 <SheetTitle className="flex justify-between items-center">
                   <span>Menü</span>
-                  <SheetClose asChild>
-                    <Button variant="ghost" size="icon">
-                      <LogOut className="h-5 w-5" />
-                    </Button>
-                  </SheetClose>
+                  <SheetClose />
                 </SheetTitle>
               </SheetHeader>
               <div className="py-4 px-4">
@@ -68,8 +64,20 @@ export default function Header() {
                   <Link href="/urunler" className="block py-2 px-3 rounded-md hover:bg-gray-100">
                     Tüm Ürünler
                   </Link>
+                  <Link href="/yeni-urunler" className="block py-2 px-3 rounded-md hover:bg-gray-100">
+                    <span className="text-red-500 font-medium flex items-center">
+                      Yeni Ürünler
+                      <span className="ml-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded">Yeni</span>
+                    </span>
+                  </Link>
                   <Link href="/kampanyali-urunler" className="block py-2 px-3 rounded-md hover:bg-gray-100">
                     Kampanyalı Ürünler
+                  </Link>
+                  <Link href="/siparis-takibi" className="block py-2 px-3 rounded-md hover:bg-gray-100">
+                    <span className="flex items-center">
+                      <Package className="h-4 w-4 mr-2" />
+                      Sipariş Takibi
+                    </span>
                   </Link>
                   {user ? (
                     <>
@@ -202,7 +210,7 @@ export default function Header() {
               </Link>
             </li>
             <li>
-              <Link href="/yeni-urunler" className="block py-3 font-medium hover:text-primary">
+              <Link href="/yeni-urunler" className="block py-3 font-medium hover:text-primary text-red-500">
                 Yeni Ürünler
               </Link>
             </li>

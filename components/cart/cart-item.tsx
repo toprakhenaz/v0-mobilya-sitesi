@@ -33,7 +33,7 @@ export default function CartItem({ item }: CartItemProps) {
   }
 
   // Ensure we have a valid image URL
-  const imageUrl = product.images && product.images.length > 0 ? product.images[0] : "/diverse-products-still-life.png"
+  const imageUrl = product.images && product.images.length > 0 ? product.images[0] : "/placeholder.svg"
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 border-b">
@@ -41,7 +41,13 @@ export default function CartItem({ item }: CartItemProps) {
       <div className="col-span-1 md:col-span-6">
         <div className="flex items-center">
           <div className="relative h-20 w-20 flex-shrink-0">
-            <Image src={imageUrl || "/placeholder.svg"} alt={product.name} fill className="object-cover rounded" />
+            <Image
+              src={imageUrl || "/placeholder.svg"}
+              alt={product.name}
+              fill
+              className="object-cover rounded"
+              priority={true}
+            />
           </div>
           <div className="ml-4">
             <Link href={`/urun/${product.slug}`} className="font-medium hover:text-primary">

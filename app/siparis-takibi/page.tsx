@@ -2,50 +2,46 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Search, Loader2, CheckCircle, Truck, Package, Clock, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { supabase } from "@/lib/supabase-client"
-import type { Order } from "@/lib/supabase"
+import type { Order } from "@/lib/order-service"
 
 export default function OrderTracking() {
   const router = useRouter()
-  const [orderNumber, setOrderNumber] = useState("")
-  const [email, setEmail] = useState("")
+  const searchParams = useSearchParams()
+  const initialOrderId = searchParams.get("order_id")
+
+  const [orderNumber, setOrderNumber] = useState(initialOrderId || "")
+  const [contactPhone, setContactPhone] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [order, setOrder] = useState<Order | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // Auto-search if order_id is provided in URL
+  useEffect(() => {
+    if (initialOrderId) {
+      handleSearch()
+    }
+  }, [initialOrderId])
+
+  const handleSearch = async () => {
     setIsLoading(true)
     setError(null)
 
-    if (!orderNumber || !email) {
-      setError("Lütfen sipariş numarası ve e-posta adresinizi girin.")
+    if (!orderNumber) {
+      setError("Lütfen sipariş numarası girin.")
       setIsLoading(false)
       return
     }
 
     try {
-      // Önce kullanıcıyı e-posta ile bul
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("id")
-        .eq("email", email.trim())
-        .single()
-
-      if (userError || !userData) {
-        setError("Bu e-posta adresi ile ilişkili bir hesap bulunamadı.")
-        setIsLoading(false)
-        return
-      }
-
-      // Kullanıcı ID ve sipariş numarası ile siparişi bul
+      // Directly fetch the order by ID without requiring login
       const { data: orderData, error: orderError } = await supabase
         .from("orders")
         .select(`
@@ -55,12 +51,18 @@ export default function OrderTracking() {
             product:products(*)
           )
         `)
-        .eq("id", Number.parseInt(orderNumber))
-        .eq("user_id", userData.id)
+        .eq("id", Number(orderNumber))
         .single()
 
       if (orderError || !orderData) {
-        setError("Belirtilen sipariş numarası ve e-posta adresi ile eşleşen sipariş bulunamadı.")
+        setError("Belirtilen sipariş numarası ile eşleşen sipariş bulunamadı.")
+        setIsLoading(false)
+        return
+      }
+
+      // If contact phone is provided, verify it matches
+      if (contactPhone && orderData.contact_phone !== contactPhone) {
+        setError("Girdiğiniz telefon numarası bu sipariş ile eşleşmiyor.")
         setIsLoading(false)
         return
       }
@@ -72,6 +74,11 @@ export default function OrderTracking() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    handleSearch()
   }
 
   const getStatusIcon = (status: string) => {
@@ -121,7 +128,7 @@ export default function OrderTracking() {
 
   return (
     <div className="py-8">
-      <div className="container-custom">
+      <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-2xl font-bold mb-6">Sipariş Takibi</h1>
 
@@ -142,15 +149,15 @@ export default function OrderTracking() {
                   </div>
 
                   <div>
-                    <Label htmlFor="email">E-posta Adresi</Label>
+                    <Label htmlFor="contactPhone">Telefon Numarası (İsteğe Bağlı)</Label>
                     <Input
-                      id="email"
-                      type="email"
-                      placeholder="Siparişi verdiğiniz e-posta adresi"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
+                      id="contactPhone"
+                      type="tel"
+                      placeholder="Siparişi verdiğiniz telefon numarası"
+                      value={contactPhone}
+                      onChange={(e) => setContactPhone(e.target.value)}
                     />
+                    <p className="text-xs text-gray-500 mt-1">Ek doğrulama için telefon numaranızı girebilirsiniz.</p>
                   </div>
 
                   {error && (

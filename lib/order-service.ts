@@ -5,7 +5,6 @@ import type { CartItem } from "@/contexts/cart-context"
 export type Order = {
   id: number
   user_id: string | null
-  guest_phone?: string
   total_amount: number
   status: "pending" | "paid" | "shipped" | "delivered" | "cancelled"
   payment_method: "bank_transfer"
@@ -127,6 +126,46 @@ export async function getOrderByTrackingCode(orderId: number, email: string): Pr
         )
       `)
       .eq("id", orderId)
+      .single()
+
+    if (error) throw error
+
+    return data
+  } catch (error) {
+    console.error("Error fetching order:", error)
+    return null
+  }
+}
+
+// New function to get all order numbers from the database
+export async function getAllOrderNumbers(): Promise<number[]> {
+  try {
+    const { data, error } = await supabase.from("orders").select("id").order("created_at", { ascending: false })
+
+    if (error) throw error
+
+    // Extract just the order IDs from the result
+    return data.map((order) => order.id) || []
+  } catch (error) {
+    console.error("Error fetching order numbers:", error)
+    return []
+  }
+}
+
+// New function to get order by ID and phone number
+export async function getOrderByIdAndPhone(orderId: number, phone: string): Promise<Order | null> {
+  try {
+    const { data, error } = await supabase
+      .from("orders")
+      .select(`
+        *,
+        order_items:order_items(
+          *,
+          product:products(*)
+        )
+      `)
+      .eq("id", orderId)
+      .eq("contact_phone", phone)
       .single()
 
     if (error) throw error

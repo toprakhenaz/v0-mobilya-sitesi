@@ -29,7 +29,8 @@ export type Product = {
   is_on_sale?: boolean
   stock: number
   category_id: number
-  images: string[]
+  images: string[] // Client-side representation of images
+  image_urls?: string[] // Database column for image URLs
   features?: string[]
   specifications?: Record<string, string>
   created_at: string

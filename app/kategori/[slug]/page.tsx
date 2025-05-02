@@ -25,16 +25,31 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch category
+        setIsLoading(true)
+
+        // First fetch category by slug
         const categoryData = await getCategoryBySlug(params.slug)
         setCategory(categoryData)
 
-        // Fetch products
-        const { products: productsData, total } = await getProducts(params.slug, filters, currentPage, productsPerPage)
-        setProducts(productsData)
-        setTotalProducts(total)
+        if (categoryData && categoryData.id) {
+          // Now use the category ID (which is a number) to fetch products
+          const { products: productsData, total } = await getProducts(
+            categoryData.id, // Pass the category ID as a number, not the slug
+            filters,
+            currentPage,
+            productsPerPage,
+          )
+          setProducts(productsData)
+          setTotalProducts(total)
+        } else {
+          // Handle case where category doesn't exist
+          setProducts([])
+          setTotalProducts(0)
+        }
       } catch (error) {
         console.error("Error fetching data:", error)
+        setProducts([])
+        setTotalProducts(0)
       } finally {
         setIsLoading(false)
       }
