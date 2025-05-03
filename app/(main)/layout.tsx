@@ -1,19 +1,15 @@
 import type React from "react"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
-import WhatsAppButton from "@/components/whatsapp-button"
+import WhatsappButton from "@/components/whatsapp-button"
 
-export default function MainLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col min-h-screen">
+    <>
       <Header />
-      <main className="flex-grow">{children}</main>
+      <main className="min-h-screen">{children}</main>
       <Footer />
-      <WhatsAppButton />
-    </div>
+      <WhatsappButton />
+    </>
   )
 }

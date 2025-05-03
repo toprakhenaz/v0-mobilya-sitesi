@@ -2,21 +2,26 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Menu, Search, ShoppingBag, User, LogOut, Heart, Package } from "lucide-react"
+import { Menu, Search, ShoppingBag, User, LogOut, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
 import { useAuth } from "@/contexts/auth-context"
 import { useCart } from "@/contexts/cart-context"
+import { useSiteSettings } from "@/components/admin/site-settings-provider"
 import SearchBar from "./search-bar"
 import Logo from "./logo"
+import MobileMenu from "./mobile-menu"
 
 export default function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { user, signOut } = useAuth()
   const { cartItems } = useCart()
+  const { getSetting } = useSiteSettings()
 
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0)
+  const freeShippingThreshold = Number.parseFloat(
+    getSetting("free_shipping_threshold") || getSetting("ucretsiz_kargo_esigi") || "5000",
+  )
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-sm">
@@ -24,7 +29,8 @@ export default function Header() {
       <div className="hidden md:block bg-gray-50 border-b">
         <div className="container mx-auto px-4 flex justify-between items-center py-2">
           <div className="text-sm">
-            <span className="font-medium text-primary">Ücretsiz Kargo</span> - 5000 TL ve üzeri siparişlerde
+            <span className="font-medium text-primary">Ücretsiz Kargo</span> -{" "}
+            {freeShippingThreshold.toLocaleString("tr-TR")} TL ve üzeri siparişlerde
           </div>
           <div className="flex space-x-4 text-sm">
             <Link href="/hakkimizda" className="hover:text-primary">
@@ -44,72 +50,11 @@ export default function Header() {
       <div className="container mx-auto px-4 py-3 md:py-4">
         <div className="flex items-center justify-between">
           {/* Mobile Menu Trigger */}
-          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-            <Button variant="ghost" size="icon" className="md:hidden mr-2" onClick={() => setIsMenuOpen(true)}>
-              <Menu className="h-6 w-6" />
-              <span className="sr-only">Menü</span>
-            </Button>
-            <SheetContent side="left" className="w-[280px] sm:w-[350px] p-0">
-              <SheetHeader className="border-b p-4">
-                <SheetTitle className="flex justify-between items-center">
-                  <span>Menü</span>
-                  <SheetClose />
-                </SheetTitle>
-              </SheetHeader>
-              <div className="py-4 px-4">
-                <div className="mb-6">
-                  <SearchBar variant="mobile" />
-                </div>
-                <nav className="space-y-1">
-                  <Link href="/urunler" className="block py-2 px-3 rounded-md hover:bg-gray-100">
-                    Tüm Ürünler
-                  </Link>
-                  <Link href="/yeni-urunler" className="block py-2 px-3 rounded-md hover:bg-gray-100">
-                    <span className="text-red-500 font-medium flex items-center">
-                      Yeni Ürünler
-                      <span className="ml-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded">Yeni</span>
-                    </span>
-                  </Link>
-                  <Link href="/kampanyali-urunler" className="block py-2 px-3 rounded-md hover:bg-gray-100">
-                    Kampanyalı Ürünler
-                  </Link>
-                  <Link href="/siparis-takibi" className="block py-2 px-3 rounded-md hover:bg-gray-100">
-                    <span className="flex items-center">
-                      <Package className="h-4 w-4 mr-2" />
-                      Sipariş Takibi
-                    </span>
-                  </Link>
-                  {user ? (
-                    <>
-                      <Link href="/hesabim" className="block py-2 px-3 rounded-md hover:bg-gray-100">
-                        Hesabım
-                      </Link>
-                      <Link href="/hesabim/siparislerim" className="block py-2 px-3 rounded-md hover:bg-gray-100">
-                        Siparişlerim
-                      </Link>
-                      <Link href="/hesabim/favorilerim" className="block py-2 px-3 rounded-md hover:bg-gray-100">
-                        Favorilerim
-                      </Link>
-                      <button
-                        onClick={() => signOut()}
-                        className="w-full text-left py-2 px-3 rounded-md hover:bg-gray-100 flex items-center"
-                      >
-                        <LogOut className="h-4 w-4 mr-2" />
-                        Çıkış Yap
-                      </button>
-                    </>
-                  ) : (
-                    <Link href="/giris-yap" className="block py-2 px-3 rounded-md hover:bg-gray-100">
-                      Giriş Yap / Üye Ol
-                    </Link>
-                  )}
-                  <Link href="/sepet" className="block py-2 px-3 rounded-md hover:bg-gray-100">
-                    Sepetim ({cartItemCount})
-                  </Link>
-                </nav>
-              </div>
-            </SheetContent>
-          </Sheet>
+          <Button variant="ghost" size="icon" className="md:hidden mr-2" onClick={() => setIsMenuOpen(true)}>
+            <Menu className="h-6 w-6" />
+            <span className="sr-only">Menü</span>
+          </Button>
+          <MobileMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
 
           {/* Logo */}
           <Link href="/" className="flex-shrink-0">

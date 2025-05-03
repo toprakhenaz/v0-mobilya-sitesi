@@ -290,20 +290,6 @@ export default function ProductDetail({ params }: { params: { slug: string } }) 
                 </div>
               </div>
             </div>
-
-            {/* IBAN Info */}
-            <div className="bg-gray-50 p-4 rounded-md mb-6">
-              <h3 className="font-medium mb-2">Banka Hesap Bilgileri</h3>
-              <p className="text-sm mb-1">
-                <strong>Banka:</strong> Örnek Bank
-              </p>
-              <p className="text-sm mb-1">
-                <strong>Hesap Sahibi:</strong> Divona Home Ltd. Şti.
-              </p>
-              <p className="text-sm">
-                <strong>IBAN:</strong> TR12 3456 7890 1234 5678 9012 34
-              </p>
-            </div>
           </div>
         </div>
 

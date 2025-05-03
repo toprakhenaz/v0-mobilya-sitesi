@@ -377,7 +377,7 @@ export default function HeroCarouselPage() {
                 onChange={handleInputChange}
                 placeholder="https://example.com/image.jpg"
               />
-              <p className="text-xs text-muted-foreground">Önerilen boyut: 1920x600 piksel</p>
+              <p className="text-xs text-muted-foreground">��nerilen boyut: 1920x600 piksel</p>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit_title">Başlık</Label>

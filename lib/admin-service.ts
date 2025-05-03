@@ -12,7 +12,13 @@ export type AdminUser = {
   updated_at: string
 }
 
-// Define HeroSlide type
+export type ProductImage = {
+  id: number
+  product_id: number
+  url: string
+  is_primary: boolean
+}
+
 export type HeroSlide = {
   id: number
   image_url: string
@@ -21,13 +27,6 @@ export type HeroSlide = {
   description: string | null
   order_index: number
   is_active: boolean
-}
-
-export type ProductImage = {
-  id: number
-  product_id: number
-  url: string
-  is_primary: boolean
 }
 
 export type Order = {
@@ -58,38 +57,101 @@ export type OrderItem = {
   price: number
 }
 
-// Admin authentication
+// Admin login function
 export async function adminLogin(
   email: string,
   password: string,
 ): Promise<{ user: AdminUser | null; error: string | null }> {
-  try {
-    console.log("Admin giriş denemesi:", email) // Giriş denemesini konsola yazdır
-
-    // Giriş bilgilerini kontrol et (büyük/küçük harf duyarsız e-posta kontrolü)
-    if (email.toLowerCase() === "admin@divonahome.com" && password === "password") {
-      console.log("Giriş başarılı")
-      const user = {
-        id: 1,
-        email: "admin@divonahome.com",
-        full_name: "Admin User",
-        is_super_admin: true,
-        last_login: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-      return { user: user, error: null }
-    } else {
-      console.log("Giriş başarısız: Geçersiz kimlik bilgileri")
-      return { user: null, error: "Geçersiz e-posta veya şifre" }
+  // Placeholder implementation - replace with actual login logic
+  if (email === "admin@divonahome.com" && password === "password") {
+    const user: AdminUser = {
+      id: 1,
+      email: "admin@divonahome.com",
+      full_name: "Admin User",
+      is_super_admin: true,
+      last_login: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     }
-  } catch (error) {
-    console.error("Giriş yapılırken bir hata oluştu:", error)
-    return { user: null, error: "Giriş yapılırken bir hata oluştu" }
+    return { user, error: null }
+  } else {
+    return { user: null, error: "Invalid credentials" }
   }
 }
 
-// Get all products
+// Get all categories
+export async function getCategories(searchTerm = ""): Promise<Category[]> {
+  try {
+    let query = supabase.from("categories").select("*")
+
+    if (searchTerm) {
+      query = query.ilike("name", `%${searchTerm}%`)
+    }
+
+    const { data, error } = await query.order("name")
+
+    if (error) {
+      console.error("Kategoriler alınırken hata:", error.message)
+      throw new Error(error.message)
+    }
+
+    return data as Category[]
+  } catch (error) {
+    console.error("Kategoriler alınırken hata:", error)
+    return []
+  }
+}
+
+// Create a new category
+export async function createCategory(category: Omit<Category, "id">): Promise<Category | null> {
+  try {
+    const { data, error } = await supabase.from("categories").insert([category]).select().single()
+
+    if (error) {
+      console.error("Kategori oluşturulurken hata:", error.message)
+      throw new Error(error.message)
+    }
+
+    return data as Category
+  } catch (error) {
+    console.error("Kategori oluşturulurken hata:", error)
+    return null
+  }
+}
+
+// Update a category
+export async function updateCategory(id: number, category: Partial<Category>): Promise<Category | null> {
+  try {
+    const { data, error } = await supabase.from("categories").update(category).eq("id", id).select().single()
+
+    if (error) {
+      console.error(`Kategori (ID: ${id}) güncellenirken hata:`, error.message)
+      throw new Error(error.message)
+    }
+
+    return data as Category
+  } catch (error) {
+    console.error(`Kategori (ID: ${id}) güncellenirken hata:`, error)
+    return null
+  }
+}
+
+// Delete a category
+export async function deleteCategory(id: number): Promise<void> {
+  try {
+    const { error } = await supabase.from("categories").delete().eq("id", id)
+
+    if (error) {
+      console.error(`Kategori (ID: ${id}) silinirken hata:`, error.message)
+      throw new Error(error.message)
+    }
+  } catch (error) {
+    console.error(`Kategori (ID: ${id}) silinirken hata:`, error)
+    throw error
+  }
+}
+
+// Get all products with optional filtering
 export async function getProducts(
   page = 1,
   itemsPerPage = 10,
@@ -119,10 +181,10 @@ export async function getProducts(
   }
 }
 
-// Get a product by ID
+// Get a single product by ID
 export async function getProduct(id: number): Promise<Product | null> {
   try {
-    const { data, error } = await supabase.from("products").select("*").eq("id", id).single()
+    const { data, error } = await supabase.from("products").select(`*, category:categories(name)`).eq("id", id).single()
 
     if (error) {
       console.error(`Ürün (ID: ${id}) alınırken hata:`, error.message)
@@ -137,7 +199,7 @@ export async function getProduct(id: number): Promise<Product | null> {
 }
 
 // Create a new product
-export async function createProduct(product: any): Promise<Product | null> {
+export async function createProduct(product: Omit<Product, "id" | "created_at">): Promise<Product | null> {
   try {
     const { data, error } = await supabase.from("products").insert([product]).select().single()
 
@@ -154,7 +216,7 @@ export async function createProduct(product: any): Promise<Product | null> {
 }
 
 // Update a product
-export async function updateProduct(id: number, product: any): Promise<Product | null> {
+export async function updateProduct(id: number, product: Partial<Product>): Promise<Product | null> {
   try {
     const { data, error } = await supabase.from("products").update(product).eq("id", id).select().single()
 
@@ -186,124 +248,63 @@ export async function deleteProduct(id: number): Promise<void> {
 }
 
 // Delete a product image
-export async function deleteProductImage(id: number): Promise<void> {
+export async function deleteProductImage(imageId: number): Promise<void> {
   try {
-    const { error } = await supabase.from("product_images").delete().eq("id", id)
+    const { error } = await supabase.from("product_images").delete().eq("id", imageId)
 
     if (error) {
-      console.error(`Ürün resmi (ID: ${id}) silinirken hata:`, error.message)
+      console.error(`Resim (ID: ${imageId}) silinirken hata:`, error.message)
       throw new Error(error.message)
     }
   } catch (error) {
-    console.error(`Ürün resmi (ID: ${id}) silinirken hata:`, error)
+    console.error(`Resim (ID: ${imageId}) silinirken hata:`, error)
     throw error
   }
 }
 
-// Get all users
-export async function getUsers(
-  page = 1,
-  itemsPerPage = 10,
-  searchTerm = "",
-): Promise<{ users: User[]; totalCount: number }> {
+// Get order details
+export async function getOrderDetails(orderId: number): Promise<any | null> {
   try {
-    let query = supabase.from("users").select("*", { count: "exact" })
-
-    if (searchTerm) {
-      query = query.ilike("email", `%${searchTerm}%`)
-    }
-
-    const from = (page - 1) * itemsPerPage
-    const to = from + itemsPerPage - 1
-
-    const { data, error, count } = await query.range(from, to).order("created_at", { ascending: false })
+    const { data, error } = await supabase
+      .from("orders")
+      .select(`*, order_items(*, product:products(name))`)
+      .eq("id", orderId)
+      .single()
 
     if (error) {
-      console.error("Kullanıcılar alınırken hata:", error.message)
-      throw new Error(error.message)
+      console.error(`Sipariş detayları (ID: ${orderId}) alınırken hata:`, error.message)
+      return null
     }
 
-    return { users: data as User[], totalCount: count || 0 }
+    return data
   } catch (error) {
-    console.error("Kullanıcılar alınırken hata:", error)
-    return { users: [], totalCount: 0 }
-  }
-}
-
-// Create a new category
-export async function createCategory(category: any): Promise<Category | null> {
-  try {
-    const { data, error } = await supabase.from("categories").insert([category]).select().single()
-
-    if (error) {
-      console.error("Kategori oluşturulurken hata:", error.message)
-      throw new Error(error.message)
-    }
-
-    return data as Category
-  } catch (error) {
-    console.error("Kategori oluşturulurken hata:", error)
+    console.error(`Sipariş detayları (ID: ${orderId}) alınırken hata:`, error)
     return null
   }
 }
 
-// Update a category
-export async function updateCategory(id: number, category: any): Promise<Category | null> {
+// Update order status
+export async function updateOrderStatus(orderId: number, status: string): Promise<boolean> {
   try {
-    const { data, error } = await supabase.from("categories").update(category).eq("id", id).select().single()
+    const { error } = await supabase
+      .from("orders")
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", orderId)
 
     if (error) {
-      console.error(`Kategori (ID: ${id}) güncellenirken hata:`, error.message)
-      throw new Error(error.message)
+      console.error(`Sipariş durumu (ID: ${orderId}) güncellenirken hata:`, error.message)
+      return false
     }
 
-    return data as Category
+    return true
   } catch (error) {
-    console.error(`Kategori (ID: ${id}) güncellenirken hata:`, error)
-    return null
-  }
-}
-
-// Delete a category
-export async function deleteCategory(id: number): Promise<void> {
-  try {
-    const { error } = await supabase.from("categories").delete().eq("id", id)
-
-    if (error) {
-      console.error(`Kategori (ID: ${id}) silinirken hata:`, error.message)
-      throw new Error(error.message)
-    }
-  } catch (error) {
-    console.error(`Kategori (ID: ${id}) silinirken hata:`, error)
-    throw error
-  }
-}
-
-// Get all categories
-export async function getCategories(searchTerm = ""): Promise<Category[]> {
-  try {
-    let query = supabase.from("categories").select("*")
-
-    if (searchTerm) {
-      query = query.ilike("name", `%${searchTerm}%`)
-    }
-
-    const { data, error } = await query.order("name", { ascending: true })
-
-    if (error) {
-      console.error("Kategoriler alınırken hata:", error.message)
-      throw new Error(error.message)
-    }
-
-    return data as Category[]
-  } catch (error) {
-    console.error("Kategoriler alınırken hata:", error)
-    return []
+    console.error(`Sipariş durumu (ID: ${orderId}) güncellenirken hata:`, error)
+    return false
   }
 }
 
 // Get site settings
-export async function getSiteSettings() {
+export async function getSiteSettings(): Promise<any[]> {
   try {
     const { data, error } = await supabase.from("site_settings").select("*")
 
@@ -319,61 +320,40 @@ export async function getSiteSettings() {
   }
 }
 
-// Update multiple settings at once
-export async function updateMultipleSettings(settings: { key: string; value: string }[]) {
+// Update multiple settings
+export async function updateMultipleSettings(settings: { key: string; value: string }[]): Promise<void> {
   try {
-    // Use upsert to handle both insert and update
-    const { error } = await supabase.from("site_settings").upsert(
-      settings.map((setting) => ({
-        key: setting.key,
-        value: setting.value,
-        updated_at: new Date().toISOString(),
-      })),
-      { onConflict: "key" },
-    )
+    for (const setting of settings) {
+      const { error } = await supabase.from("site_settings").upsert(
+        {
+          key: setting.key,
+          value: setting.value,
+        },
+        { onConflict: "key" },
+      )
 
-    if (error) {
-      console.error("Ayarlar güncellenirken hata:", error.message)
-      throw new Error(error.message)
+      if (error) {
+        console.error(`Ayarlar (Key: ${setting.key}) güncellenirken hata:`, error.message)
+        throw new Error(error.message)
+      }
     }
-
-    return true
   } catch (error) {
     console.error("Ayarlar güncellenirken hata:", error)
     throw error
   }
 }
 
-// Update a single setting
-export async function updateSetting(key: string, value: string) {
-  try {
-    const { error } = await supabase
-      .from("site_settings")
-      .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" })
-
-    if (error) {
-      console.error(`Ayar (${key}) güncellenirken hata:`, error.message)
-      throw new Error(error.message)
-    }
-
-    return true
-  } catch (error) {
-    console.error(`Ayar (${key}) güncellenirken hata:`, error)
-    throw error
-  }
-}
-
-// Get hero slides
+// Get all hero slides
 export async function getHeroSlides(): Promise<HeroSlide[]> {
   try {
-    const { data, error } = await supabase.from("hero_slides").select("*").order("order_index", { ascending: true })
+    const { data, error } = await supabase.from("hero_slides").select("*").order("order_index")
 
     if (error) {
       console.error("Hero slaytları alınırken hata:", error.message)
       throw new Error(error.message)
     }
 
-    return (data as any[]) || []
+    return (data as HeroSlide[]) || []
   } catch (error) {
     console.error("Hero slaytları alınırken hata:", error)
     return []
@@ -429,18 +409,16 @@ export async function deleteHeroSlide(id: number): Promise<void> {
   }
 }
 
-// Update hero slide order
+// Update order index for hero slides
 export async function updateHeroSlideOrder(slides: { id: number; order_index: number }[]): Promise<void> {
   try {
-    // Use a single database call to update all slides
-    const { error } = await supabase.from("hero_slides").upsert(
-      slides.map((slide) => ({ id: slide.id, order_index: slide.order_index })),
-      { onConflict: "id" },
-    )
+    for (const slide of slides) {
+      const { error } = await supabase.from("hero_slides").update({ order_index: slide.order_index }).eq("id", slide.id)
 
-    if (error) {
-      console.error("Hero slayt sırası güncellenirken hata:", error.message)
-      throw new Error(error.message)
+      if (error) {
+        console.error(`Hero slayt (ID: ${slide.id}) sırası güncellenirken hata:`, error.message)
+        throw new Error(error.message)
+      }
     }
   } catch (error) {
     console.error("Hero slayt sırası güncellenirken hata:", error)
@@ -448,7 +426,39 @@ export async function updateHeroSlideOrder(slides: { id: number; order_index: nu
   }
 }
 
-// Get all orders
+// Get all users
+export async function getUsers(
+  page = 1,
+  itemsPerPage = 10,
+  searchTerm = "",
+): Promise<{ users: User[]; totalCount: number }> {
+  try {
+    let query = supabase
+      .from("users")
+      .select(`*, (SELECT count(*) FROM orders WHERE orders.user_id = users.id) as orders_count`, { count: "exact" })
+
+    if (searchTerm) {
+      query = query.ilike("email", `%${searchTerm}%`)
+    }
+
+    const from = (page - 1) * itemsPerPage
+    const to = from + itemsPerPage - 1
+
+    const { data, error, count } = await query.range(from, to).order("created_at", { ascending: false })
+
+    if (error) {
+      console.error("Kullanıcılar alınırken hata:", error.message)
+      throw new Error(error.message)
+    }
+
+    return { users: data as User[], totalCount: count || 0 }
+  } catch (error) {
+    console.error("Kullanıcılar alınırken hata:", error)
+    return { users: [], totalCount: 0 }
+  }
+}
+
+// Get all orders with optional filtering
 export async function getOrders(
   page = 1,
   itemsPerPage = 10,
@@ -456,16 +466,14 @@ export async function getOrders(
   searchTerm?: string,
 ): Promise<{ orders: Order[]; totalCount: number }> {
   try {
-    console.log("getOrders çağrıldı:", { page, itemsPerPage, status, searchTerm })
-
-    let query = supabase.from("orders").select("*", { count: "exact" })
+    let query = supabase.from("orders").select(`*, user:users(email)`, { count: "exact" })
 
     if (status && status !== "all") {
       query = query.eq("status", status)
     }
 
     if (searchTerm) {
-      query = query.ilike("shipping_address", `%${searchTerm}%`)
+      query = query.or(`id.like.%${searchTerm}%,shipping_address.like.%${searchTerm}%`)
     }
 
     const from = (page - 1) * itemsPerPage
@@ -478,68 +486,14 @@ export async function getOrders(
       throw new Error(error.message)
     }
 
-    const orders =
-      data?.map((order) => ({
-        ...order,
-        user_email: order.guest_email || "Misafir Kullanıcı",
-      })) || []
+    const ordersWithUserEmail = data?.map((order) => ({
+      ...order,
+      user_email: order.user?.email || order.guest_email || "Misafir Kullanıcı",
+    })) as Order[]
 
-    return {
-      orders: orders as Order[],
-      totalCount: count || 0,
-    }
+    return { orders: ordersWithUserEmail || [], totalCount: count || 0 }
   } catch (error) {
     console.error("Siparişler alınırken hata:", error)
     return { orders: [], totalCount: 0 }
-  }
-}
-
-// Get order details
-export async function getOrderDetails(id: number): Promise<Order | null> {
-  try {
-    const { data: order, error: orderError } = await supabase.from("orders").select("*").eq("id", id).single()
-
-    if (orderError) {
-      console.error(`Sipariş (ID: ${id}) alınırken hata:`, orderError.message)
-      return null
-    }
-
-    const { data: items, error: itemsError } = await supabase
-      .from("order_items")
-      .select("*, product:products(name, price, image_url)")
-      .eq("order_id", id)
-
-    if (itemsError) {
-      console.error(`Sipariş öğeleri (Sipariş ID: ${id}) alınırken hata:`, itemsError.message)
-    }
-
-    return {
-      ...order,
-      user_email: order.guest_email || "Misafir Kullanıcı",
-      items: items || [],
-    } as Order
-  } catch (error) {
-    console.error(`Sipariş (ID: ${id}) alınırken hata:`, error)
-    return null
-  }
-}
-
-// Update order status
-export async function updateOrderStatus(id: number, status: string): Promise<boolean> {
-  try {
-    const { error } = await supabase
-      .from("orders")
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq("id", id)
-
-    if (error) {
-      console.error(`Sipariş durumu (ID: ${id}) güncellenirken hata:`, error.message)
-      return false
-    }
-
-    return true
-  } catch (error) {
-    console.error(`Sipariş durumu (ID: ${id}) güncellenirken hata:`, error)
-    return false
   }
 }

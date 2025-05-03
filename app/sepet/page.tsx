@@ -7,11 +7,24 @@ import CartItem from "@/components/cart/cart-item"
 import { useCart } from "@/contexts/cart-context"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
+import { useSiteSettings } from "@/components/admin/site-settings-provider"
 
 export default function Cart() {
   const { cartItems, isLoading, subtotal, shipping, total, clearCart } = useCart()
   const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
+  const { getSetting } = useSiteSettings()
+
+  // Kargo ayarları
+  const shippingFee = Number.parseFloat(getSetting("shipping_fee") || getSetting("kargo_ucreti") || "0")
+  const freeShippingThreshold = Number.parseFloat(
+    getSetting("free_shipping_threshold") || getSetting("ucretsiz_kargo_esigi") || "1000",
+  )
+
+  // Banka bilgileri
+  const bankName = getSetting("bank_name") || getSetting("banka_adi") || ""
+  const accountHolder = getSetting("account_holder") || getSetting("hesap_sahibi") || ""
+  const iban = getSetting("iban") || ""
 
   const handleCheckout = () => {
     router.push("/siparis")
@@ -79,7 +92,11 @@ export default function Cart() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Kargo</span>
-                    <span>{shipping === 0 ? "Ücretsiz" : `${shipping.toLocaleString("tr-TR")} ₺`}</span>
+                    <span>
+                      {subtotal >= freeShippingThreshold || shipping === 0
+                        ? "Ücretsiz"
+                        : `${shipping.toLocaleString("tr-TR")} ₺`}
+                    </span>
                   </div>
                   <div className="border-t pt-3 mt-3">
                     <div className="flex justify-between font-bold">
@@ -93,6 +110,24 @@ export default function Cart() {
                 <Button className="w-full" onClick={handleCheckout}>
                   Siparişi Tamamla
                 </Button>
+
+                {/* Banka Bilgileri */}
+                {bankName && accountHolder && iban && (
+                  <div className="mt-6 pt-6 border-t">
+                    <h3 className="font-medium mb-2">Havale/EFT Bilgileri</h3>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <p>
+                        <span className="font-medium">Banka:</span> {bankName}
+                      </p>
+                      <p>
+                        <span className="font-medium">Hesap Sahibi:</span> {accountHolder}
+                      </p>
+                      <p>
+                        <span className="font-medium">IBAN:</span> {iban}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

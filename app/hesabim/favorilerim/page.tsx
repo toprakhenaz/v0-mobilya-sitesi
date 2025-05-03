@@ -9,6 +9,8 @@ import { getWishlistItems, removeFromWishlist } from "@/lib/wishlist-service"
 import { useAuth } from "@/contexts/auth-context"
 import { toast } from "@/components/ui/use-toast"
 import type { Product } from "@/lib/supabase"
+import { AccountSidebar } from "@/components/sidebar"
+import { MobileAccountSidebar } from "@/components/mobile-account-sidebar"
 
 export default function WishlistPage() {
   const [wishlistItems, setWishlistItems] = useState<Product[]>([])
@@ -97,37 +99,50 @@ export default function WishlistPage() {
           <span className="text-gray-900 font-medium">Favorilerim</span>
         </div>
 
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Favorilerim</h1>
-          <p className="text-gray-600">Beğendiğiniz ve daha sonra incelemek istediğiniz ürünler</p>
-        </div>
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Mobile Account Sidebar */}
+          <MobileAccountSidebar />
 
-        {/* Wishlist Items */}
-        {wishlistItems.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {wishlistItems.map((product) => (
-              <div key={product.id} className="relative group">
-                <ProductCard product={product} />
-                <button
-                  onClick={() => handleRemoveFromWishlist(product.id)}
-                  className="absolute top-2 right-2 bg-white rounded-full p-1.5 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
-                  aria-label="Favorilerden kaldır"
-                >
-                  <Trash2 className="h-4 w-4 text-red-500" />
-                </button>
+          {/* Desktop Sidebar */}
+          <div className="w-full md:w-64 shrink-0 hidden md:block">
+            <AccountSidebar />
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1">
+            {/* Page Header */}
+            <div className="mb-8">
+              <h1 className="text-2xl md:text-3xl font-bold mb-2">Favorilerim</h1>
+              <p className="text-gray-600">Beğendiğiniz ve daha sonra incelemek istediğiniz ürünler</p>
+            </div>
+
+            {/* Wishlist Items */}
+            {wishlistItems.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {wishlistItems.map((product) => (
+                  <div key={product.id} className="relative group">
+                    <ProductCard product={product} />
+                    <button
+                      onClick={() => handleRemoveFromWishlist(product.id)}
+                      className="absolute top-2 right-2 bg-white rounded-full p-1.5 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label="Favorilerden kaldır"
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
+            ) : (
+              <div className="text-center py-12">
+                <h2 className="text-xl font-bold mb-2">Favorilerinizde ürün bulunmamaktadır</h2>
+                <p className="text-gray-600 mb-6">Beğendiğiniz ürünleri favorilerinize ekleyebilirsiniz.</p>
+                <Link href="/urunler">
+                  <Button>Alışverişe Başla</Button>
+                </Link>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="text-center py-12">
-            <h2 className="text-xl font-bold mb-2">Favorilerinizde ürün bulunmamaktadır</h2>
-            <p className="text-gray-600 mb-6">Beğendiğiniz ürünleri favorilerinize ekleyebilirsiniz.</p>
-            <Link href="/urunler">
-              <Button>Alışverişe Başla</Button>
-            </Link>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   )

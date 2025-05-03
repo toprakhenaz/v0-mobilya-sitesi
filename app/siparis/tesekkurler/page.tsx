@@ -5,7 +5,6 @@ import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { CheckCircle, Loader2, Copy, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { getOrderById } from "@/lib/order-service"
 import { useAuth } from "@/contexts/auth-context"
 import { toast } from "@/components/ui/use-toast"
 
@@ -22,34 +21,54 @@ export default function OrderConfirmation() {
   useEffect(() => {
     const fetchOrder = async () => {
       if (!orderId) {
+        console.error("Sipariş ID'si bulunamadı")
         router.push("/")
         return
       }
 
       try {
-        const orderData = await getOrderById(Number(orderId), user?.id)
-        if (!orderData) {
-          router.push("/")
-          return
+        console.log("Sipariş detayları alınıyor:", orderId)
+        // Fetch order details from API
+        const response = await fetch(`/api/orders/${orderId}`)
+
+        console.log("API yanıtı:", response.status, response.statusText)
+
+        if (!response.ok) {
+          console.error("Sipariş detayları alınamadı:", response.status, response.statusText)
+          throw new Error(`Sipariş detayları alınamadı: ${response.status}`)
         }
-        setOrder(orderData)
+
+        const data = await response.json()
+        console.log("Sipariş detayları:", data)
+
+        if (!data.order) {
+          console.error("Sipariş bulunamadı:", data.error || "Unknown error")
+          throw new Error("Sipariş bulunamadı")
+        }
+
+        setOrder(data.order)
       } catch (error) {
         console.error("Error fetching order:", error)
+        toast({
+          title: "Hata",
+          description: "Sipariş detayları alınamadı. Lütfen daha sonra tekrar deneyin.",
+          variant: "destructive",
+        })
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchOrder()
-  }, [orderId, router, user])
+  }, [orderId, router])
 
   const copyOrderNumber = () => {
-    if (orderId) {
-      navigator.clipboard.writeText(orderId)
+    if (order?.tracking_number) {
+      navigator.clipboard.writeText(order.tracking_number)
       setCopied(true)
       toast({
         title: "Kopyalandı",
-        description: "Sipariş numarası panoya kopyalandı.",
+        description: "Sipariş takip numarası panoya kopyalandı.",
       })
 
       setTimeout(() => setCopied(false), 2000)
@@ -90,9 +109,9 @@ export default function OrderConfirmation() {
               <p className="text-gray-600 mb-6">Siparişiniz başarıyla oluşturuldu ve sistemimize kaydedildi.</p>
 
               <div className="bg-gray-50 w-full max-w-md p-6 rounded-lg mb-6">
-                <p className="text-gray-500 text-sm mb-1">Sipariş Numaranız:</p>
+                <p className="text-gray-500 text-sm mb-1">Sipariş Takip Numaranız:</p>
                 <div className="flex items-center justify-center gap-3">
-                  <p className="text-3xl font-bold text-gray-800">{order.id}</p>
+                  <p className="text-3xl font-bold text-gray-800">{order.tracking_number || order.id}</p>
                   <Button variant="outline" size="sm" onClick={copyOrderNumber} className="flex items-center">
                     <Copy className="h-4 w-4 mr-1" /> {copied ? "Kopyalandı" : "Kopyala"}
                   </Button>
@@ -108,7 +127,7 @@ export default function OrderConfirmation() {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 max-w-md text-left">
                 <h5 className="text-blue-800 font-medium mb-1">Siparişinizi takip edebilirsiniz</h5>
                 <p className="text-blue-700 text-sm">
-                  Yukarıdaki sipariş numaranız ile istediğiniz zaman siparişinizin durumunu kontrol edebilirsiniz.
+                  Yukarıdaki sipariş takip numaranız ile istediğiniz zaman siparişinizin durumunu kontrol edebilirsiniz.
                 </p>
               </div>
             </div>
@@ -129,7 +148,8 @@ export default function OrderConfirmation() {
                   <strong>IBAN:</strong> TR12 3456 7890 1234 5678 9012 34
                 </p>
                 <p className="text-sm font-medium mt-3 text-red-600">
-                  Lütfen havale yaparken açıklama kısmına sipariş numaranızı ({order.id}) yazmayı unutmayınız.
+                  Lütfen havale yaparken açıklama kısmına sipariş takip numaranızı ({order.tracking_number || order.id})
+                  yazmayı unutmayınız.
                 </p>
               </div>
             </div>
@@ -150,11 +170,11 @@ export default function OrderConfirmation() {
                       <tr key={item.id}>
                         <td className="px-4 py-3">
                           <div>
-                            <p className="font-medium">{item.product?.name}</p>
+                            <p className="font-medium">{item.product?.name || "Ürün"}</p>
                           </div>
                         </td>
                         <td className="px-4 py-3 text-center">{item.quantity}</td>
-                        <td className="px-4 py-3 text-right">{item.price.toLocaleString("tr-TR")} ₺</td>
+                        <td className="px-4 py-3 text-right">{(item.price || 0).toLocaleString("tr-TR")} ₺</td>
                       </tr>
                     ))}
                   </tbody>
@@ -163,7 +183,7 @@ export default function OrderConfirmation() {
                       <td colSpan={2} className="px-4 py-2 text-right font-medium">
                         Ara Toplam:
                       </td>
-                      <td className="px-4 py-2 text-right">{order.total_amount.toLocaleString("tr-TR")} ₺</td>
+                      <td className="px-4 py-2 text-right">{(order.total_amount || 0).toLocaleString("tr-TR")} ₺</td>
                     </tr>
                     <tr>
                       <td colSpan={2} className="px-4 py-2 text-right font-medium">
@@ -177,7 +197,9 @@ export default function OrderConfirmation() {
                       <td colSpan={2} className="px-4 py-2 text-right font-bold">
                         Toplam:
                       </td>
-                      <td className="px-4 py-2 text-right font-bold">{order.total_amount.toLocaleString("tr-TR")} ₺</td>
+                      <td className="px-4 py-2 text-right font-bold">
+                        {(order.total_amount || 0).toLocaleString("tr-TR")} ₺
+                      </td>
                     </tr>
                   </tfoot>
                 </table>
@@ -188,16 +210,16 @@ export default function OrderConfirmation() {
               <h2 className="font-bold mb-3">Teslimat Bilgileri</h2>
               <div className="bg-gray-50 p-4 rounded-md">
                 <p className="text-sm mb-1">
-                  <strong>Adres:</strong> {order.shipping_address}
+                  <strong>Adres:</strong> {order.shipping_address || ""}
                 </p>
                 <p className="text-sm mb-1">
-                  <strong>Şehir:</strong> {order.shipping_city}
+                  <strong>Şehir:</strong> {order.shipping_city || ""}
                 </p>
                 <p className="text-sm mb-1">
-                  <strong>Posta Kodu:</strong> {order.shipping_postal_code}
+                  <strong>Posta Kodu:</strong> {order.shipping_postal_code || ""}
                 </p>
                 <p className="text-sm">
-                  <strong>Telefon:</strong> {order.contact_phone}
+                  <strong>Telefon:</strong> {order.contact_phone || ""}
                 </p>
               </div>
             </div>

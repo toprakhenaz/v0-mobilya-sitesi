@@ -9,12 +9,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Loader2, Search, AlertCircle, Package } from "lucide-react"
-import { getOrderById } from "@/lib/order-service"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Loader2, AlertCircle, Package } from "lucide-react"
 
 export default function OrderTrackingPage() {
-  const [orderNumber, setOrderNumber] = useState("")
+  // orderNumber state'i kaldırıldı
   const [trackingNumber, setTrackingNumber] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -37,36 +35,6 @@ export default function OrderTrackingPage() {
       }
     }
   }, [])
-
-  const handleSearchById = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!orderNumber.trim()) {
-      setError("Lütfen bir sipariş numarası girin.")
-      return
-    }
-
-    setLoading(true)
-    setError(null)
-    setOrder(null)
-
-    try {
-      const orderData = await getOrderById(Number.parseInt(orderNumber))
-
-      if (!orderData) {
-        setError("Sipariş bulunamadı. Lütfen sipariş numaranızı kontrol edin.")
-        setLoading(false)
-        return
-      }
-
-      setOrder(orderData)
-    } catch (err) {
-      console.error("Sipariş arama hatası:", err)
-      setError("Sipariş aranırken bir hata oluştu. Lütfen tekrar deneyin.")
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleSearchByTracking = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -93,7 +61,6 @@ export default function OrderTrackingPage() {
 
       setOrder(data.order)
     } catch (err) {
-      console.error("Sipariş arama hatası:", err)
       setError("Sipariş aranırken bir hata oluştu. Lütfen tekrar deneyin.")
     } finally {
       setLoading(false)
@@ -147,77 +114,36 @@ export default function OrderTrackingPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle>Siparişinizi Takip Edin</CardTitle>
-          <CardDescription>
-            Sipariş numarası veya takip numarası ile siparişinizin durumunu kontrol edebilirsiniz.
-          </CardDescription>
+          <CardDescription>Takip numarası ile siparişinizin durumunu kontrol edebilirsiniz.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="tracking" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="tracking">Takip Numarası ile Ara</TabsTrigger>
-              <TabsTrigger value="order">Sipariş Numarası ile Ara</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="tracking">
-              <form id="tracking-form" onSubmit={handleSearchByTracking} className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <Label htmlFor="trackingNumber" className="sr-only">
-                    Takip Numarası
-                  </Label>
-                  <Input
-                    id="trackingNumber"
-                    placeholder="Takip numaranızı girin (örn: TR123456)"
-                    value={trackingNumber}
-                    onChange={(e) => setTrackingNumber(e.target.value)}
-                    disabled={loading}
-                  />
-                </div>
-                <Button type="submit" disabled={loading} className="bg-green-500 hover:bg-green-600">
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Aranıyor
-                    </>
-                  ) : (
-                    <>
-                      <Package className="mr-2 h-4 w-4" />
-                      Takip Et
-                    </>
-                  )}
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="order">
-              <form onSubmit={handleSearchById} className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <Label htmlFor="orderNumber" className="sr-only">
-                    Sipariş Numarası
-                  </Label>
-                  <Input
-                    id="orderNumber"
-                    placeholder="Sipariş numaranızı girin"
-                    value={orderNumber}
-                    onChange={(e) => setOrderNumber(e.target.value)}
-                    disabled={loading}
-                  />
-                </div>
-                <Button type="submit" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Aranıyor
-                    </>
-                  ) : (
-                    <>
-                      <Search className="mr-2 h-4 w-4" />
-                      Ara
-                    </>
-                  )}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+          <form id="tracking-form" onSubmit={handleSearchByTracking} className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <Label htmlFor="trackingNumber" className="sr-only">
+                Takip Numarası
+              </Label>
+              <Input
+                id="trackingNumber"
+                placeholder="Takip numaranızı girin (örn: TR123456)"
+                value={trackingNumber}
+                onChange={(e) => setTrackingNumber(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+            <Button type="submit" disabled={loading} className="bg-green-500 hover:bg-green-600">
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Aranıyor
+                </>
+              ) : (
+                <>
+                  <Package className="mr-2 h-4 w-4" />
+                  Takip Et
+                </>
+              )}
+            </Button>
+          </form>
         </CardContent>
       </Card>
 
@@ -234,10 +160,10 @@ export default function OrderTrackingPage() {
           <CardHeader>
             <CardTitle>Sipariş #{order.id}</CardTitle>
             <CardDescription>
-              <div className="flex flex-col gap-1">
+              <span className="flex flex-col gap-1">
                 <span>Sipariş Tarihi: {new Date(order.created_at).toLocaleDateString("tr-TR")}</span>
                 <span className="font-medium">Takip Numarası: {order.tracking_number}</span>
-              </div>
+              </span>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

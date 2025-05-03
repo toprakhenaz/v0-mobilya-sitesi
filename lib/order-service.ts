@@ -214,33 +214,78 @@ export async function getUserOrderById(userId: string, orderId: number): Promise
 }
 
 // Create a new order
-export async function createOrder(orderData: Omit<Order, "id" | "created_at" | "updated_at">): Promise<Order | null> {
+export async function createOrder(
+  userId: string | null,
+  cartItems: any[],
+  shippingAddress: any,
+  phone: string,
+  guestEmail?: string,
+): Promise<Order> {
   try {
-    // Generate a tracking number if not provided
-    if (!orderData.tracking_number) {
-      orderData.tracking_number = generateTrackingNumber()
-    }
+    console.log("createOrder çağrıldı:", { userId, cartItems, shippingAddress, phone, guestEmail })
 
-    const { data, error } = await supabase
+    // Calculate total amount
+    const subtotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
+    const shipping = subtotal > 5000 ? 0 : 150 // Free shipping for orders over 5000 TL
+    const total = subtotal + shipping
+
+    // Generate a tracking number
+    const trackingNumber = generateTrackingNumber()
+    console.log("Oluşturulan takip numarası:", trackingNumber)
+
+    // Format address as string
+    const addressStr = `${shippingAddress.full_name}, ${shippingAddress.address}, ${shippingAddress.city}, ${shippingAddress.postal_code}, ${shippingAddress.country}, ${phone}`
+
+    // Create order
+    const { data: orderData, error: orderError } = await supabase
       .from("orders")
       .insert([
         {
-          ...orderData,
+          user_id: userId,
+          guest_email: guestEmail,
+          status: "pending",
+          total_amount: total,
+          shipping_address: addressStr,
+          billing_address: addressStr, // Same as shipping address
+          payment_method: "bank_transfer",
+          tracking_number: trackingNumber,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
       ])
       .select()
 
-    if (error) {
-      console.error("Sipariş oluşturulurken hata:", error.message)
-      throw new Error(error.message)
+    if (orderError) {
+      console.error("Sipariş oluşturulurken hata:", orderError.message)
+      throw new Error(orderError.message)
     }
 
-    return data?.[0] || null
-  } catch (error) {
+    if (!orderData || orderData.length === 0) {
+      throw new Error("Sipariş oluşturuldu ancak veri döndürülemedi")
+    }
+
+    const order = orderData[0]
+    console.log("Oluşturulan sipariş:", order)
+
+    // Create order items
+    const orderItems = cartItems.map((item) => ({
+      order_id: order.id,
+      product_id: item.product_id,
+      quantity: item.quantity,
+      price: item.price,
+    }))
+
+    const { error: itemsError } = await supabase.from("order_items").insert(orderItems)
+
+    if (itemsError) {
+      console.error("Sipariş öğeleri oluşturulurken hata:", itemsError.message)
+      throw new Error(itemsError.message)
+    }
+
+    return order
+  } catch (error: any) {
     console.error("Sipariş oluşturulurken hata:", error)
-    return null
+    throw new Error(error.message || "Sipariş oluşturulurken bir hata oluştu")
   }
 }
 

@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { FileText, Loader2, Package, Clock, CheckCircle, AlertCircle } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase-client"
+import { AccountSidebar } from "@/components/sidebar"
+import { MobileAccountSidebar } from "@/components/mobile-account-sidebar"
 
 export default function OrdersPage() {
   const router = useRouter()
@@ -92,32 +94,12 @@ export default function OrdersPage() {
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="flex flex-col md:flex-row gap-6">
-        {/* Sidebar - Account Navigation */}
-        <div className="w-full md:w-64 shrink-0">
-          <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
-            <h2 className="font-bold text-lg mb-4">Hesabım</h2>
-            <nav className="space-y-1">
-              <Link
-                href="/hesabim/siparislerim"
-                className="flex items-center gap-2 p-2 bg-primary-50 text-primary rounded-md"
-              >
-                <FileText className="h-5 w-5" />
-                <span>Siparişlerim</span>
-              </Link>
-              <Link href="/hesabim/adreslerim" className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-md">
-                <FileText className="h-5 w-5" />
-                <span>Adreslerim</span>
-              </Link>
-              <Link href="/hesabim/favorilerim" className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-md">
-                <FileText className="h-5 w-5" />
-                <span>Favorilerim</span>
-              </Link>
-              <Link href="/hesabim/hesap-ayarlari" className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-md">
-                <FileText className="h-5 w-5" />
-                <span>Hesap Ayarları</span>
-              </Link>
-            </nav>
-          </div>
+        {/* Mobile Account Sidebar */}
+        <MobileAccountSidebar />
+
+        {/* Desktop Sidebar - Account Navigation */}
+        <div className="w-full md:w-64 shrink-0 hidden md:block">
+          <AccountSidebar />
         </div>
 
         {/* Main Content */}

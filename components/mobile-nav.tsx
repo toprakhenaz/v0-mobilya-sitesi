@@ -8,11 +8,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Menu, Search, Package, X, Info, Phone, FileText, Shield, HelpCircle, MapPin } from "lucide-react"
 import { useCart } from "@/contexts/cart-context"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function MobileNav() {
   const pathname = usePathname()
   const { cartItems } = useCart()
   const [isOpen, setIsOpen] = useState(false)
+  const { user, isAuthenticated } = useAuth()
 
   // Calculate total quantity of items in cart
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0)
@@ -69,9 +71,17 @@ export default function MobileNav() {
                 Sipariş Takibi
               </span>
             </Link>
-            <Link href="/sepet" className="block py-2 px-3 rounded-md hover:bg-gray-100" onClick={closeMenu}>
-              Sepetim ({cartItemCount})
-            </Link>
+
+            {/* Login/Account based on auth status */}
+            {isAuthenticated ? (
+              <Link href="/hesabim" className="block py-2 px-3 rounded-md hover:bg-gray-100" onClick={closeMenu}>
+                Hesabım
+              </Link>
+            ) : (
+              <Link href="/giris-yap" className="block py-2 px-3 rounded-md hover:bg-gray-100" onClick={closeMenu}>
+                Giriş Yap
+              </Link>
+            )}
 
             {/* Kurumsal Section */}
             <div className="mt-6 pt-4 border-t">
@@ -147,12 +157,7 @@ export default function MobileNav() {
               </Link>
             </div>
 
-            {/* Login/Register at the bottom */}
-            <div className="mt-6 pt-4 border-t">
-              <Link href="/giris-yap" className="block py-2 px-3 rounded-md hover:bg-gray-100" onClick={closeMenu}>
-                Giriş Yap / Üye Ol
-              </Link>
-            </div>
+            {/* Remove the Login/Register at the bottom since we now have it in the main nav */}
           </nav>
         </div>
       </SheetContent>

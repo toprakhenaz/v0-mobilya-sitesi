@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { Loader2, Plus, Pencil, Trash2 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { AccountSidebar } from "@/components/sidebar"
+import { MobileAccountSidebar } from "@/components/mobile-account-sidebar"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -179,7 +180,10 @@ export default function AddressesPage() {
         <h1 className="text-2xl font-bold mb-6">Adreslerim</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {/* Sidebar for desktop */}
+          {/* Mobile Account Sidebar */}
+          <MobileAccountSidebar />
+
+          {/* Desktop Sidebar */}
           <div className="hidden md:block">
             <AccountSidebar />
           </div>

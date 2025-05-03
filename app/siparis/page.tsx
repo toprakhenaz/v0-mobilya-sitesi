@@ -14,14 +14,22 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/contexts/auth-context"
 import { useCart } from "@/contexts/cart-context"
 import { getAddressesByUserId, createAddress, type Address } from "@/lib/address-service"
-import { createOrder } from "@/lib/order-service"
 import { toast } from "@/components/ui/use-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { useSiteSettings } from "@/contexts/site-settings-context"
 
 export default function Checkout() {
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
   const { cartItems, subtotal, shipping, total, clearCart } = useCart()
+
+  // Ödeme bilgilerini ekleyelim
+  const { getSetting } = useSiteSettings()
+
+  // Banka bilgileri
+  const bankName = getSetting("bank_name") || getSetting("banka_adi") || "Örnek Bank"
+  const accountHolder = getSetting("account_holder") || getSetting("hesap_sahibi") || "Divona Home Ltd. Şti."
+  const iban = getSetting("iban") || "TR12 3456 7890 1234 5678 9012 34"
 
   const [addresses, setAddresses] = useState<Address[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<number | "new" | "guest">(0)
@@ -36,6 +44,7 @@ export default function Checkout() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [paymentMethod, setPaymentMethod] = useState("bank_transfer")
 
   // New address form state
   const [newAddress, setNewAddress] = useState({
@@ -53,7 +62,7 @@ export default function Checkout() {
     const fetchAddresses = async () => {
       setIsLoading(true)
 
-      if (cartItems.length === 0) {
+      if (!cartItems || cartItems.length === 0) {
         router.push("/sepet")
         return
       }
@@ -87,7 +96,7 @@ export default function Checkout() {
     }
 
     fetchAddresses()
-  }, [user, router, cartItems.length])
+  }, [user, router, cartItems])
 
   const handleNewAddressChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -148,7 +157,7 @@ export default function Checkout() {
     e.preventDefault()
     setErrorMessage(null)
 
-    if (cartItems.length === 0) {
+    if (!cartItems || cartItems.length === 0) {
       router.push("/sepet")
       return
     }
@@ -163,7 +172,7 @@ export default function Checkout() {
     }
 
     // Check if receipt file is uploaded
-    if (!receiptFile) {
+    if (!receiptFile && paymentMethod === "bank_transfer") {
       toast({
         title: "Hata",
         description: "Lütfen ödeme dekontunuzu yükleyin.",
@@ -214,20 +223,59 @@ export default function Checkout() {
         shippingAddress = selectedAddress
       }
 
-      // Create order
-      const order = await createOrder(
-        user?.id || null,
-        cartItems,
-        shippingAddress,
-        shippingAddress.phone,
-        isGuest ? guestEmail : undefined,
-      )
+      console.log("Sipariş oluşturuluyor...", {
+        userId: user?.id || null,
+        cartItems: cartItems.length,
+        shippingAddress: shippingAddress.address,
+      })
+
+      // Create order via API
+      const response = await fetch("/api/orders/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user?.id || null,
+          cartItems,
+          shippingAddress,
+          contactPhone: shippingAddress.phone || "",
+          guestEmail: isGuest ? guestEmail : undefined,
+        }),
+      })
+
+      console.log("API yanıtı:", response.status, response.statusText)
+
+      if (!response.ok) {
+        // Check if response is JSON
+        const contentType = response.headers.get("content-type")
+        console.log("Content-Type:", contentType)
+
+        if (contentType && contentType.includes("application/json")) {
+          const data = await response.json()
+          throw new Error(data.error || "Sipariş oluşturulurken bir hata oluştu")
+        } else {
+          // If not JSON, throw a generic error with status code
+          throw new Error(`Sunucu hatası (${response.status}): Sipariş oluşturulamadı`)
+        }
+      }
+
+      const data = await response.json()
+      console.log("Sipariş başarıyla oluşturuldu:", data)
+
+      if (!data.order || !data.order.id) {
+        throw new Error("Sipariş oluşturuldu ancak sipariş bilgileri alınamadı")
+      }
 
       // Clear cart
       await clearCart()
 
-      // Redirect to order confirmation page
-      router.push(`/siparis/tesekkurler?order_id=${order.id}`)
+      // Redirect to order confirmation page with tracking number
+      const trackingNumber = data.order.tracking_number || data.order.id
+      console.log("Teşekkürler sayfasına yönlendiriliyor:", `/siparis/tesekkurler?order_id=${data.order.id}`)
+
+      // Doğrudan window.location kullanarak yönlendirme yapalım
+      window.location.href = `/siparis/tesekkurler?order_id=${data.order.id}`
     } catch (error: any) {
       console.error("Order creation error:", error)
       setErrorMessage(error.message || "Sipariş oluşturulurken bir hata oluştu.")
@@ -548,7 +596,7 @@ export default function Checkout() {
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h2 className="text-lg font-bold mb-4">Ödeme Yöntemi</h2>
                 <div className="mb-4">
-                  <RadioGroup defaultValue="bank_transfer">
+                  <RadioGroup defaultValue="bank_transfer" onValueChange={(value) => setPaymentMethod(value)}>
                     <div className="flex items-center space-x-2 p-3 border rounded-md hover:bg-gray-50">
                       <RadioGroupItem value="bank_transfer" id="bank_transfer" />
                       <Label htmlFor="bank_transfer">Banka Havalesi / EFT</Label>
@@ -556,53 +604,62 @@ export default function Checkout() {
                   </RadioGroup>
                 </div>
 
-                <div className="bg-gray-50 p-4 rounded-md mb-4">
-                  <h3 className="font-medium mb-2">Banka Hesap Bilgileri</h3>
-                  <p className="text-sm mb-1">
-                    <strong>Banka:</strong> Örnek Bank
-                  </p>
-                  <p className="text-sm mb-1">
-                    <strong>Hesap Sahibi:</strong> Divona Home Ltd. Şti.
-                  </p>
-                  <p className="text-sm">
-                    <strong>IBAN:</strong> TR12 3456 7890 1234 5678 9012 34
-                  </p>
-                </div>
+                {paymentMethod === "bank_transfer" && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-md">
+                    <h3 className="font-medium mb-2">Havale/EFT Bilgileri</h3>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <p>
+                        <span className="font-medium">Banka:</span> {bankName}
+                      </p>
+                      <p>
+                        <span className="font-medium">Hesap Sahibi:</span> {accountHolder}
+                      </p>
+                      <p>
+                        <span className="font-medium">IBAN:</span> {iban}
+                      </p>
+                      <p className="mt-2 text-xs">
+                        Ödemenizi yaptıktan sonra sipariş numaranızı açıklama kısmına yazmayı unutmayınız.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Dekont Yükleme */}
-                <div className="mb-4">
-                  <Label htmlFor="receipt" className="block mb-2">
-                    Dekont Yükleme <span className="text-red-500">*</span>
-                  </Label>
-                  <div className="flex items-center">
-                    <input
-                      type="file"
-                      id="receipt"
-                      ref={fileInputRef}
-                      onChange={handleFileChange}
-                      className="hidden"
-                      accept="image/*,.pdf"
-                      required
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Dekont Yükle
-                    </Button>
-                    {receiptFile && (
-                      <span className="ml-3 text-sm text-gray-600">
-                        {receiptFile.name} ({Math.round(receiptFile.size / 1024)} KB)
-                      </span>
-                    )}
+                {paymentMethod === "bank_transfer" && (
+                  <div className="mb-4">
+                    <Label htmlFor="receipt" className="block mb-2">
+                      Dekont Yükleme <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="flex items-center">
+                      <input
+                        type="file"
+                        id="receipt"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        className="hidden"
+                        accept="image/*,.pdf"
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Dekont Yükle
+                      </Button>
+                      {receiptFile && (
+                        <span className="ml-3 text-sm text-gray-600">
+                          {receiptFile.name} ({Math.round(receiptFile.size / 1024)} KB)
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Ödemenizi yaptıktan sonra dekontu yüklemeniz gerekmektedir.
+                    </p>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Ödemenizi yaptıktan sonra dekontu yüklemeniz gerekmektedir.
-                  </p>
-                </div>
+                )}
 
                 <div className="flex items-start bg-yellow-50 p-3 rounded-md">
                   <AlertCircle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5" />
@@ -621,16 +678,16 @@ export default function Checkout() {
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Ara Toplam</span>
-                    <span>{subtotal.toLocaleString("tr-TR")} ₺</span>
+                    <span>{subtotal?.toLocaleString("tr-TR") || "0"} ₺</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Kargo</span>
-                    <span>{shipping === 0 ? "Ücretsiz" : `${shipping.toLocaleString("tr-TR")} ₺`}</span>
+                    <span>{shipping === 0 ? "Ücretsiz" : `${shipping?.toLocaleString("tr-TR") || "0"} ₺`}</span>
                   </div>
                   <div className="border-t pt-3 mt-3">
                     <div className="flex justify-between font-bold">
                       <span>Toplam</span>
-                      <span className="text-xl">{total.toLocaleString("tr-TR")} ₺</span>
+                      <span className="text-xl">{total?.toLocaleString("tr-TR") || "0"} ₺</span>
                     </div>
                   </div>
                 </div>
