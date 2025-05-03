@@ -50,9 +50,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
             // Fetch product details for each cart item
             const itemsWithProducts = await Promise.all(
               parsedCart.map(async (item: CartItem) => {
-                const { data: product } = await supabase.from("products").select("*").eq("id", item.product_id).single()
-
-                return { ...item, product }
+                try {
+                  const { data: product } = await supabase
+                    .from("products")
+                    .select("*")
+                    .eq("id", item.product_id)
+                    .single()
+                  return { ...item, product: product || {} }
+                } catch (error) {
+                  console.error("Error fetching product:", error)
+                  return { ...item, product: {} }
+                }
               }),
             )
 
@@ -79,7 +87,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
           .eq("user_id", user.id)
 
         if (error) throw error
-        setCartItems(data || [])
+
+        // Ensure all products have valid data
+        const validatedItems =
+          data?.map((item) => {
+            if (!item.product) {
+              return { ...item, product: {} }
+            }
+            return item
+          }) || []
+
+        setCartItems(validatedItems)
       } catch (error) {
         console.error("Error loading cart:", error)
         setCartItems([])
@@ -327,7 +345,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Calculate totals
+  // Calculate totals - with safety checks
   const subtotal = cartItems.reduce((total, item) => {
     const price = item.product?.price || 0
     return total + price * item.quantity

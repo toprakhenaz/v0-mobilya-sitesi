@@ -229,6 +229,18 @@ export default function Checkout() {
         shippingAddress: shippingAddress.address,
       })
 
+      // Prepare cart items for API
+      const simplifiedCartItems = cartItems.map((item) => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+        price: item.product?.price || 0,
+        product: {
+          price: item.product?.price || 0,
+          name: item.product?.name || "",
+          slug: item.product?.slug || "",
+        },
+      }))
+
       // Create order via API
       const response = await fetch("/api/orders/create", {
         method: "POST",
@@ -237,7 +249,7 @@ export default function Checkout() {
         },
         body: JSON.stringify({
           userId: user?.id || null,
-          cartItems,
+          cartItems: simplifiedCartItems,
           shippingAddress,
           contactPhone: shippingAddress.phone || "",
           guestEmail: isGuest ? guestEmail : undefined,
@@ -246,22 +258,37 @@ export default function Checkout() {
 
       console.log("API yanıtı:", response.status, response.statusText)
 
-      if (!response.ok) {
-        // Check if response is JSON
-        const contentType = response.headers.get("content-type")
-        console.log("Content-Type:", contentType)
+      // Check if response is JSON
+      const contentType = response.headers.get("content-type")
+      console.log("Content-Type:", contentType)
 
-        if (contentType && contentType.includes("application/json")) {
-          const data = await response.json()
-          throw new Error(data.error || "Sipariş oluşturulurken bir hata oluştu")
-        } else {
-          // If not JSON, throw a generic error with status code
-          throw new Error(`Sunucu hatası (${response.status}): Sipariş oluşturulamadı`)
+      if (!response.ok) {
+        let errorMessage = `Sunucu hatası (${response.status}): Sipariş oluşturulamadı`
+
+        try {
+          if (contentType && contentType.includes("application/json")) {
+            const errorData = await response.json()
+            errorMessage = errorData.error || errorMessage
+          } else {
+            // If not JSON, try to get text
+            const errorText = await response.text()
+            console.error("Non-JSON error response:", errorText.substring(0, 200))
+          }
+        } catch (parseError) {
+          console.error("Error parsing error response:", parseError)
         }
+
+        throw new Error(errorMessage)
       }
 
-      const data = await response.json()
-      console.log("Sipariş başarıyla oluşturuldu:", data)
+      let data
+      try {
+        data = await response.json()
+        console.log("Sipariş başarıyla oluşturuldu:", data)
+      } catch (jsonError) {
+        console.error("Error parsing JSON response:", jsonError)
+        throw new Error("Sunucu yanıtı işlenemedi")
+      }
 
       if (!data.order || !data.order.id) {
         throw new Error("Sipariş oluşturuldu ancak sipariş bilgileri alınamadı")

@@ -8,6 +8,7 @@ import { useCart } from "@/contexts/cart-context"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import { useSiteSettings } from "@/components/admin/site-settings-provider"
+import { useEffect } from "react"
 
 export default function Cart() {
   const { cartItems, isLoading, subtotal, shipping, total, clearCart } = useCart()
@@ -25,6 +26,19 @@ export default function Cart() {
   const bankName = getSetting("bank_name") || getSetting("banka_adi") || ""
   const accountHolder = getSetting("account_holder") || getSetting("hesap_sahibi") || ""
   const iban = getSetting("iban") || ""
+
+  // Log cart items for debugging
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      console.log("Cart items:", cartItems)
+      cartItems.forEach((item) => {
+        console.log(
+          `Product: ${item.product.name}, Image:`,
+          item.product.images || item.product.image_urls || "No image",
+        )
+      })
+    }
+  }, [cartItems])
 
   const handleCheckout = () => {
     router.push("/siparis")
