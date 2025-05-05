@@ -32,33 +32,56 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch featured products (newest products)
-        const featured = await getFeaturedProducts(4)
-        setFeaturedProducts(featured)
+        setIsLoading(true)
 
-        // Fetch sale products
-        const sale = await getSaleProducts(4)
-        setSaleProducts(sale)
-
-        // Fetch categories
-        const categoriesData = await getCategories()
+        // Fetch categories first since that's where the error is occurring
+        let categoriesData = []
+        try {
+          categoriesData = await getCategories()
+        } catch (error) {
+          console.error("Error fetching categories:", error)
+          categoriesData = [] // Use empty array if categories fetch fails
+        }
 
         // Add image URLs to categories if they don't have one
         const categoriesWithImages = categoriesData.map((category) => {
-          if (!category.image_url) {
+          if (!category?.image_url) {
             return {
               ...category,
               image_url:
-                categoryImages[category.slug] ||
-                `/placeholder.svg?height=300&width=300&query=${encodeURIComponent(category.name + " furniture")}`,
+                categoryImages[category?.slug] ||
+                `/placeholder.svg?height=300&width=300&query=${encodeURIComponent((category?.name || "furniture") + " furniture")}`,
             }
           }
           return category
         })
 
         setCategories(categoriesWithImages)
+
+        // Continue with other data fetches
+        try {
+          // Fetch featured products (newest products)
+          const featured = await getFeaturedProducts(4)
+          setFeaturedProducts(featured)
+        } catch (error) {
+          console.error("Error fetching featured products:", error)
+          setFeaturedProducts([])
+        }
+
+        try {
+          // Fetch sale products
+          const sale = await getSaleProducts(4)
+          setSaleProducts(sale)
+        } catch (error) {
+          console.error("Error fetching sale products:", error)
+          setSaleProducts([])
+        }
       } catch (error) {
-        console.error("Error fetching data:", error)
+        console.error("Error in fetchData:", error)
+        // Set default empty values for all state
+        setCategories([])
+        setFeaturedProducts([])
+        setSaleProducts([])
       } finally {
         setIsLoading(false)
       }

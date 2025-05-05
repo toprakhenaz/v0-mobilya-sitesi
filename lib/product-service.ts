@@ -131,15 +131,23 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 
 export async function getCategories() {
   try {
+    // Make sure supabase client is initialized
+    if (!supabase) {
+      console.error("Supabase client is not initialized")
+      return []
+    }
+
     const { data, error } = await supabase.from("categories").select("*").order("name")
 
     if (error) {
+      console.error("Supabase error fetching categories:", error)
       throw error
     }
 
     return data as any[]
   } catch (error) {
     console.error("Error fetching categories:", error)
+    // Return empty array instead of throwing to prevent page crashes
     return []
   }
 }
