@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,9 +25,11 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Edit, MoreHorizontal, Plus, Search, Trash2, Eye, Loader2 } from "lucide-react"
+import { Edit, MoreHorizontal, Plus, Search, Trash2, Eye, Loader2, Upload, X, ImageIcon } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { type Category, getCategories, createCategory, updateCategory, deleteCategory } from "@/lib/admin-service"
+import { useRouter } from "next/navigation"
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([])
@@ -47,6 +49,10 @@ export default function AdminCategoriesPage() {
     image_url: "",
   })
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const router = useRouter()
 
   const { toast } = useToast()
 
@@ -115,6 +121,7 @@ export default function AdminCategoriesPage() {
       description: category.description || "",
       image_url: category.image_url || "",
     })
+    setPreviewImage(category.image_url || null)
     setIsEditing(true)
     setIsAddDialogOpen(true)
   }
@@ -126,6 +133,7 @@ export default function AdminCategoriesPage() {
       description: "",
       image_url: "",
     })
+    setPreviewImage(null)
     setIsEditing(false)
     setIsAddDialogOpen(true)
   }
@@ -136,6 +144,76 @@ export default function AdminCategoriesPage() {
       ...prev,
       [name]: value,
     }))
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    const file = files[0]
+    setIsUploading(true)
+
+    try {
+      // Önizleme için URL oluştur
+      const previewUrl = URL.createObjectURL(file)
+      setPreviewImage(previewUrl)
+
+      // Resmi sunucuya yükle
+      const formData = new FormData()
+      formData.append("image", file)
+
+      const response = await fetch("/api/admin/upload-category-image", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error("Resim yüklenirken bir hata oluştu")
+      }
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Resim URL'sini form state'ine ekle
+        setCategoryForm((prev) => ({
+          ...prev,
+          image_url: data.imageUrl,
+        }))
+
+        toast({
+          title: "Başarılı",
+          description: "Resim başarıyla yüklendi.",
+        })
+      } else {
+        throw new Error(data.error || "Resim yüklenirken bir hata oluştu")
+      }
+    } catch (error) {
+      console.error("Resim yükleme hatası:", error)
+      toast({
+        variant: "destructive",
+        title: "Hata",
+        description: "Resim yüklenirken bir hata oluştu.",
+      })
+      // Hata durumunda önizlemeyi temizle
+      setPreviewImage(null)
+    } finally {
+      setIsUploading(false)
+      // Dosya seçiciyi sıfırla
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setCategoryForm((prev) => ({
+      ...prev,
+      image_url: "",
+    }))
+    setPreviewImage(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
   }
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -187,8 +265,9 @@ export default function AdminCategoriesPage() {
         })
       }
 
-      // Formu kapat
+      // Formu kapat ve sayfayı yenile
       setIsAddDialogOpen(false)
+      router.refresh()
     } catch (error) {
       console.error("Kategori kaydedilirken hata oluştu:", error)
       toast({
@@ -205,11 +284,11 @@ export default function AdminCategoriesPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Kategoriler</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Kategoriler</h1>
           <p className="text-muted-foreground">Tüm kategorilerinizi buradan yönetebilirsiniz.</p>
         </div>
-        <Button onClick={handleAddNewClick}>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button onClick={handleAddNewClick} className="gap-1">
+          <Plus className="h-4 w-4" />
           Yeni Kategori
         </Button>
       </div>
@@ -221,18 +300,20 @@ export default function AdminCategoriesPage() {
             placeholder="Kategori ara..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            className="h-9"
           />
-          <Button type="submit">
+          <Button type="submit" size="sm" variant="secondary">
             <Search className="h-4 w-4" />
           </Button>
         </form>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-muted/50">
               <TableHead>ID</TableHead>
+              <TableHead>Resim</TableHead>
               <TableHead>Kategori Adı</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead className="text-right">Ürün Sayısı</TableHead>
@@ -242,32 +323,49 @@ export default function AdminCategoriesPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
-                  <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                <TableCell colSpan={6} className="h-24 text-center">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
                 </TableCell>
               </TableRow>
             ) : categories.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   {searchTerm ? "Arama sonucu bulunamadı." : "Henüz kategori bulunmuyor."}
                 </TableCell>
               </TableRow>
             ) : (
               categories.map((category) => (
-                <TableRow key={category.id}>
+                <TableRow key={category.id} className="hover:bg-muted/50">
                   <TableCell className="font-medium">{category.id}</TableCell>
+                  <TableCell>
+                    {category.image_url ? (
+                      <div className="relative h-10 w-10 rounded-md overflow-hidden">
+                        <Image
+                          src={category.image_url || "/placeholder.svg"}
+                          alt={category.name}
+                          fill
+                          className="object-cover"
+                          sizes="40px"
+                        />
+                      </div>
+                    ) : (
+                      <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
+                        <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell>{category.name}</TableCell>
-                  <TableCell>{category.slug}</TableCell>
+                  <TableCell className="text-muted-foreground">{category.slug}</TableCell>
                   <TableCell className="text-right">{category.product_count}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                           <span className="sr-only">Menüyü aç</span>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="w-[160px]">
                         <DropdownMenuLabel>İşlemler</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => handleEditClick(category)}>
@@ -280,7 +378,10 @@ export default function AdminCategoriesPage() {
                             <span>Görüntüle</span>
                           </DropdownMenuItem>
                         </Link>
-                        <DropdownMenuItem onClick={() => handleDeleteClick(category.id)}>
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteClick(category.id)}
+                          className="text-destructive focus:text-destructive"
+                        >
                           <Trash2 className="mr-2 h-4 w-4" />
                           <span>Sil</span>
                         </DropdownMenuItem>
@@ -320,7 +421,23 @@ export default function AdminCategoriesPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+      <Dialog
+        open={isAddDialogOpen}
+        onOpenChange={(open) => {
+          setIsAddDialogOpen(open)
+          if (!open) {
+            // Dialog kapandığında state'leri temizle
+            setEditingCategory(null)
+            setCategoryForm({
+              name: "",
+              description: "",
+              image_url: "",
+            })
+            setPreviewImage(null)
+            setIsEditing(false)
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>{isEditing ? "Kategori Düzenle" : "Yeni Kategori Ekle"}</DialogTitle>
@@ -355,14 +472,64 @@ export default function AdminCategoriesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="image_url">Resim URL</Label>
-                <Input
-                  id="image_url"
-                  name="image_url"
-                  value={categoryForm.image_url}
-                  onChange={handleFormChange}
-                  placeholder="https://example.com/image.jpg"
-                />
+                <Label>Kategori Resmi</Label>
+                <div className="flex flex-col gap-4">
+                  {previewImage ? (
+                    <div className="relative w-full h-40 rounded-md overflow-hidden border">
+                      <Image
+                        src={previewImage || "/placeholder.svg"}
+                        alt="Kategori resmi önizleme"
+                        fill
+                        className="object-cover"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-8 w-8"
+                        onClick={handleRemoveImage}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="border rounded-md p-4 text-center">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">Henüz resim yüklenmedi</p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Input
+                      ref={fileInputRef}
+                      type="file"
+                      id="image"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      className="w-full"
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Yükleniyor...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Resim Yükle
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
             <DialogFooter>

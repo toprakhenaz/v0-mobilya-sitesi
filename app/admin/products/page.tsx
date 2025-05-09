@@ -32,9 +32,12 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
-import { Edit, MoreHorizontal, Plus, Search, Trash2, Eye, Loader2 } from "lucide-react"
+import { Edit, MoreHorizontal, Plus, Search, Trash2, Eye, Loader2, ImageIcon } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { getProducts, deleteProduct, type Product } from "@/lib/admin-service"
+import { useRouter } from "next/navigation"
+import { Badge } from "@/components/ui/badge"
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -46,6 +49,7 @@ export default function AdminProductsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const { toast } = useToast()
+  const router = useRouter()
   const itemsPerPage = 10
 
   useEffect(() => {
@@ -94,6 +98,9 @@ export default function AdminProductsPage() {
         title: "Başarılı",
         description: "Ürün başarıyla silindi.",
       })
+
+      // Sayfayı yenile
+      router.refresh()
     } catch (error) {
       console.error("Ürün silinirken hata oluştu:", error)
       toast({
@@ -112,12 +119,12 @@ export default function AdminProductsPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Ürünler</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Ürünler</h1>
           <p className="text-muted-foreground">Tüm ürünlerinizi buradan yönetebilirsiniz.</p>
         </div>
         <Link href="/admin/products/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
+          <Button className="gap-1">
+            <Plus className="h-4 w-4" />
             Yeni Ürün
           </Button>
         </Link>
@@ -130,18 +137,20 @@ export default function AdminProductsPage() {
             placeholder="Ürün ara..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            className="h-9"
           />
-          <Button type="submit">
+          <Button type="submit" size="sm" variant="secondary">
             <Search className="h-4 w-4" />
           </Button>
         </form>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-muted/50">
               <TableHead>ID</TableHead>
+              <TableHead>Resim</TableHead>
               <TableHead>Ürün Adı</TableHead>
               <TableHead>Kategori</TableHead>
               <TableHead className="text-right">Fiyat</TableHead>
@@ -153,36 +162,69 @@ export default function AdminProductsPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
-                  <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                <TableCell colSpan={8} className="h-24 text-center">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
                 </TableCell>
               </TableRow>
             ) : products.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
+                <TableCell colSpan={8} className="h-24 text-center">
                   {searchTerm ? "Arama sonucu bulunamadı." : "Henüz ürün bulunmuyor."}
                 </TableCell>
               </TableRow>
             ) : (
               products.map((product) => (
-                <TableRow key={product.id}>
+                <TableRow key={product.id} className="hover:bg-muted/50">
                   <TableCell className="font-medium">{product.id}</TableCell>
-                  <TableCell>{product.name}</TableCell>
+                  <TableCell>
+                    {product.image_urls && product.image_urls.length > 0 ? (
+                      <div className="relative h-10 w-10 rounded-md overflow-hidden">
+                        <Image
+                          src={product.image_urls[0] || "/placeholder.svg"}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          sizes="40px"
+                        />
+                      </div>
+                    ) : (
+                      <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
+                        <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span>{product.name}</span>
+                      {product.is_new && (
+                        <Badge variant="outline" className="mt-1 w-fit bg-blue-50 text-blue-700 border-blue-200">
+                          Yeni
+                        </Badge>
+                      )}
+                      {product.is_on_sale && (
+                        <Badge variant="outline" className="mt-1 w-fit bg-amber-50 text-amber-700 border-amber-200">
+                          İndirimde
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>{product.category?.name || "-"}</TableCell>
                   <TableCell className="text-right">{product.price.toFixed(2)} ₺</TableCell>
                   <TableCell className="text-right">
                     {product.discount_price ? `${product.discount_price.toFixed(2)} ₺` : "-"}
                   </TableCell>
-                  <TableCell className="text-right">{product.stock}</TableCell>
+                  <TableCell className="text-right">
+                    <span className={product.stock <= 5 ? "text-red-500 font-medium" : ""}>{product.stock}</span>
+                  </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                           <span className="sr-only">Menüyü aç</span>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="w-[160px]">
                         <DropdownMenuLabel>İşlemler</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <Link href={`/admin/products/${product.id}`}>
@@ -197,7 +239,10 @@ export default function AdminProductsPage() {
                             <span>Görüntüle</span>
                           </DropdownMenuItem>
                         </Link>
-                        <DropdownMenuItem onClick={() => handleDeleteClick(product.id)}>
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteClick(product.id)}
+                          className="text-destructive focus:text-destructive"
+                        >
                           <Trash2 className="mr-2 h-4 w-4" />
                           <span>Sil</span>
                         </DropdownMenuItem>

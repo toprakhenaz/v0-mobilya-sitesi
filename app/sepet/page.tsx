@@ -1,211 +1,216 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Loader2, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import CartItem from "@/components/cart/cart-item"
+import { Input } from "@/components/ui/input"
 import { useCart } from "@/contexts/cart-context"
-import { useAuth } from "@/contexts/auth-context"
-import { useRouter } from "next/navigation"
-import { useSiteSettings } from "@/components/admin/site-settings-provider"
-import { useEffect } from "react"
+import { useSiteSettings } from "@/contexts/site-settings-context"
+import { ShoppingBag, Trash2, CreditCard, Truck, AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react"
+import CartItem from "@/components/cart/cart-item"
 
 export default function Cart() {
-  const { cartItems, isLoading, subtotal, shipping, total, clearCart } = useCart()
-  const { user, isLoading: authLoading } = useAuth()
-  const router = useRouter()
+  const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart()
+  const [couponCode, setCouponCode] = useState("")
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false)
   const { getSetting } = useSiteSettings()
 
-  // Kargo ayarları
-  const shippingFee = Number.parseFloat(getSetting("shipping_fee") || getSetting("kargo_ucreti") || "0")
-  const freeShippingThreshold = Number.parseFloat(
-    getSetting("free_shipping_threshold") || getSetting("ucretsiz_kargo_esigi") || "1000",
+  const [subtotal, setSubtotal] = useState(0)
+  const [total, setTotal] = useState(0)
+  const [shippingFee, setShippingFee] = useState(0)
+
+  const shippingFeeValue = Number(getSetting("shipping_fee") || getSetting("kargo_ucreti") || "50")
+  const freeShippingThreshold = Number(
+    getSetting("free_shipping_threshold") || getSetting("ucretsiz_kargo_esigi") || "5000",
   )
 
-  // Banka bilgileri
-  const bankName = getSetting("bank_name") || getSetting("banka_adi") || ""
-  const accountHolder = getSetting("account_holder") || getSetting("hesap_sahibi") || ""
-  const iban = getSetting("iban") || ""
-
-  // WhatsApp bilgileri
-  const whatsappNumber = getSetting("whatsapp_number") || getSetting("whatsapp_numarasi") || ""
-  const defaultMessage =
-    getSetting("whatsapp_message") || getSetting("varsayilan_mesaj") || "Merhaba, sipariş vermek istiyorum."
-
-  // Log cart items for debugging
   useEffect(() => {
-    if (cartItems.length > 0) {
-      console.log("Cart items:", cartItems)
-      cartItems.forEach((item) => {
-        console.log(
-          `Product: ${item.product.name}, Image:`,
-          item.product.images || item.product.image_urls || "No image",
-        )
-      })
-    }
-  }, [cartItems])
+    const calculatedSubtotal = cartItems.reduce((acc, item) => {
+      const itemPrice = item.price * item.quantity
+      return acc + itemPrice
+    }, 0)
 
-  const handleCheckout = () => {
-    router.push("/siparis")
+    setSubtotal(calculatedSubtotal)
+
+    // Ücretsiz kargo eşiğini aşarsa kargo ücreti 0, aksi takdirde sabit kargo ücreti
+    const calculatedShippingFee = calculatedSubtotal >= freeShippingThreshold ? 0 : shippingFeeValue
+    setShippingFee(calculatedShippingFee)
+
+    setTotal(calculatedSubtotal + calculatedShippingFee)
+  }, [cartItems, freeShippingThreshold, shippingFeeValue])
+
+  const handleApplyCoupon = () => {
+    if (!couponCode.trim()) return
+
+    setIsApplyingCoupon(true)
+
+    // Kupon kodu uygulaması simülasyonu
+    setTimeout(() => {
+      setIsApplyingCoupon(false)
+      setCouponCode("")
+      alert("Bu kupon kodu geçerli değil.")
+    }, 1000)
   }
 
-  // WhatsApp ile ödeme linki oluştur
-  const getWhatsAppLink = () => {
-    if (!whatsappNumber) return "#"
-
-    // Telefon numarasını formatlama (başında + işareti olmalı)
-    let formattedNumber = whatsappNumber.startsWith("+")
-      ? whatsappNumber
-      : whatsappNumber.startsWith("0")
-        ? "+9" + whatsappNumber
-        : "+90" + whatsappNumber
-
-    // Boşluk, parantez gibi karakterleri temizle
-    formattedNumber = formattedNumber.replace(/[\s()-]/g, "")
-
-    // Mesaj oluştur
-    const message = encodeURIComponent(
-      `${defaultMessage} PTT ile güvenli ödeme yapmak istiyorum. Sepet tutarı: ${total.toLocaleString("tr-TR")} ₺`,
-    )
-
-    return `https://wa.me/${formattedNumber}?text=${message}`
-  }
-
-  if (isLoading || authLoading) {
+  if (cartItems.length === 0) {
     return (
-      <div className="py-12 flex justify-center items-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="container mx-auto px-4 py-16">
+        <div className="max-w-md mx-auto text-center">
+          <div className="bg-primary-50 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
+            <ShoppingBag className="h-10 w-10 text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold mb-4">Sepetiniz Boş</h1>
+          <p className="text-gray-600 mb-8">
+            Sepetinizde ürün bulunmamaktadır. Sepetinize ürün eklemek için alışverişe devam edin.
+          </p>
+          <Link href="/urunler">
+            <Button>Alışverişe Devam Et</Button>
+          </Link>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="py-6">
-      <div className="container mx-auto px-4">
-        <h1 className="text-2xl font-bold mb-6">Sepetim</h1>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">Alışveriş Sepeti</h1>
 
-        {cartItems.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Cart Items */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                <div className="hidden md:grid grid-cols-12 gap-4 p-4 bg-gray-50 border-b">
-                  <div className="col-span-6">
-                    <span className="font-medium">Ürün</span>
-                  </div>
-                  <div className="col-span-2 text-center">
-                    <span className="font-medium">Fiyat</span>
-                  </div>
-                  <div className="col-span-2 text-center">
-                    <span className="font-medium">Adet</span>
-                  </div>
-                  <div className="col-span-2 text-right">
-                    <span className="font-medium">Toplam</span>
-                  </div>
-                </div>
-
-                {/* Cart Item List */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-6">
+              <div className="space-y-6">
                 {cartItems.map((item) => (
-                  <CartItem key={item.id} item={item} />
+                  <CartItem
+                    key={`${item.id}-${item.options?.join("-")}`}
+                    item={item}
+                    updateQuantity={updateQuantity}
+                    removeFromCart={removeFromCart}
+                  />
                 ))}
-
-                {/* Continue Shopping and Clear Cart */}
-                <div className="flex justify-between p-4">
-                  <Link href="/" className="text-primary hover:underline">
-                    Alışverişe Devam Et
-                  </Link>
-                  <button className="text-gray-500 hover:text-red-500" onClick={() => clearCart()}>
-                    Sepeti Temizle
-                  </button>
-                </div>
               </div>
             </div>
 
-            {/* Order Summary */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-lg font-bold mb-4">Sipariş Özeti</h2>
-
-                <div className="space-y-3 mb-6">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Ara Toplam</span>
-                    <span>{subtotal.toLocaleString("tr-TR")} ₺</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Kargo</span>
-                    <span>
-                      {subtotal >= freeShippingThreshold || shipping === 0
-                        ? "Ücretsiz"
-                        : `${shipping.toLocaleString("tr-TR")} ₺`}
-                    </span>
-                  </div>
-                  <div className="border-t pt-3 mt-3">
-                    <div className="flex justify-between font-bold">
-                      <span>Toplam</span>
-                      <span className="text-xl">{total.toLocaleString("tr-TR")} ₺</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Checkout Buttons */}
-                <div className="space-y-3">
-                  {/* Normal Checkout Button */}
-                  <Button className="w-full" onClick={handleCheckout}>
-                    Siparişi Tamamla
+            <div className="bg-gray-50 p-6 border-t border-gray-100">
+              <div className="flex flex-col sm:flex-row justify-between">
+                <div className="flex items-center mb-4 sm:mb-0">
+                  <Button variant="outline" className="mr-2" onClick={() => clearCart()}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Sepeti Temizle
                   </Button>
-
-                  {/* PTT ile Güvenli Ödeme Butonu */}
-                  <div className="relative text-center">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-gray-300"></span>
-                    </div>
-                    <span className="relative px-2 bg-white text-sm text-gray-500">veya</span>
-                  </div>
-
-                  <a href={getWhatsAppLink()} target="_blank" rel="noopener noreferrer" className="block">
-                    <Button
-                      className="w-full bg-[#ffcc00] hover:bg-[#e6b800] text-black flex items-center justify-center gap-2"
-                      variant="outline"
-                    >
-                      <Image src="/ptt-logo.png" alt="PTT Logo" width={24} height={24} className="rounded-sm" />
-                      PTT ile Güvenli Ödeme Yap
+                  <Link href="/urunler">
+                    <Button variant="ghost">
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Alışverişe Devam Et
                     </Button>
-                  </a>
+                  </Link>
                 </div>
 
-                {/* Banka Bilgileri */}
-                {bankName && accountHolder && iban && (
-                  <div className="mt-6 pt-6 border-t">
-                    <h3 className="font-medium mb-2">Havale/EFT Bilgileri</h3>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <p>
-                        <span className="font-medium">Banka:</span> {bankName}
-                      </p>
-                      <p>
-                        <span className="font-medium">Hesap Sahibi:</span> {accountHolder}
-                      </p>
-                      <p>
-                        <span className="font-medium">IBAN:</span> {iban}
-                      </p>
-                    </div>
+                <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                  <div className="flex w-full sm:w-auto">
+                    <Input
+                      type="text"
+                      placeholder="İndirim Kodu"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      className="rounded-r-none"
+                    />
+                    <Button
+                      onClick={handleApplyCoupon}
+                      disabled={isApplyingCoupon || !couponCode.trim()}
+                      className="rounded-l-none"
+                    >
+                      {isApplyingCoupon ? "Uygulanıyor..." : "Uygula"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden sticky top-24">
+            <div className="p-6">
+              <h2 className="text-lg font-bold mb-4">Sipariş Özeti</h2>
+
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Ara Toplam</span>
+                  <span>{subtotal.toLocaleString("tr-TR")} ₺</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Kargo</span>
+                  <span>{shippingFee === 0 ? "Ücretsiz" : `${shippingFee.toLocaleString("tr-TR")} ₺`}</span>
+                </div>
+                {shippingFee > 0 && (
+                  <div className="text-xs text-gray-500 italic">
+                    {freeShippingThreshold.toLocaleString("tr-TR")} ₺ ve üzeri siparişlerde kargo ücretsizdir.
                   </div>
                 )}
+                <div className="border-t pt-3 mt-3">
+                  <div className="flex justify-between font-bold">
+                    <span>Toplam</span>
+                    <span className="text-lg">{total.toLocaleString("tr-TR")} ₺</span>
+                  </div>
+                </div>
+              </div>
+
+              <Link href="/siparis">
+                <Button className="w-full">
+                  Siparişi Tamamla
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+
+              <div className="mt-6 space-y-4">
+                <div className="flex items-center text-sm text-gray-600">
+                  <CreditCard className="h-4 w-4 mr-2 text-primary" />
+                  <span>Güvenli ödeme seçenekleri</span>
+                </div>
+                <div className="flex items-center text-sm text-gray-600">
+                  <Truck className="h-4 w-4 mr-2 text-primary" />
+                  <span>Hızlı teslimat</span>
+                </div>
+                <div className="flex items-start text-sm text-gray-600">
+                  <AlertTriangle className="h-4 w-4 mr-2 text-yellow-500 flex-shrink-0 mt-1" />
+                  <span>
+                    Stokta bulunan ürünler 1-3 iş günü içerisinde kargoya verilir. Detaylı bilgi için{" "}
+                    <Link href="/kargo-bilgileri" className="text-primary hover:underline">
+                      kargo bilgileri
+                    </Link>
+                    sayfasını ziyaret edebilirsiniz.
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 bg-gray-50 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-medium">Ödeme Seçenekleri</h3>
+              </div>
+              <div className="flex gap-2">
+                <Image src="/visa-logo-new.png" alt="Visa" width={40} height={25} className="object-contain" />
+                <Image
+                  src="/mastercard-logo-abstract.png"
+                  alt="Mastercard"
+                  width={40}
+                  height={25}
+                  className="object-contain"
+                />
+                <Image
+                  src="/amex-logo-new.png"
+                  alt="American Express"
+                  width={40}
+                  height={25}
+                  className="object-contain"
+                />
+                <Image src="/paypal-logo-abstract.png" alt="PayPal" width={40} height={25} className="object-contain" />
               </div>
             </div>
           </div>
-        ) : (
-          <div className="text-center py-12">
-            <div className="mb-6">
-              <ShoppingCart className="mx-auto h-16 w-16 text-gray-400" />
-            </div>
-            <h2 className="text-2xl font-bold mb-2">Sepetiniz Boş</h2>
-            <p className="text-gray-600 mb-6">Sepetinizde henüz ürün bulunmamaktadır.</p>
-            <Link href="/">
-              <Button>Alışverişe Başla</Button>
-            </Link>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   )

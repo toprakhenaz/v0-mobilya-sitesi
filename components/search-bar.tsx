@@ -42,11 +42,16 @@ export default function SearchBar({
         placeholder={placeholder}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className={`pr-10 ${variant === "default" ? "rounded-full" : ""} ${
-          variant === "header" ? "bg-gray-100 hover:bg-gray-200 focus:bg-white" : ""
-        }`}
+        className={`pr-10 border-gray-200 focus:border-primary focus:ring-primary ${
+          variant === "default" ? "rounded-full" : ""
+        } ${variant === "header" ? "bg-gray-50 hover:bg-gray-100 focus:bg-white" : ""}`}
       />
-      <Button type="submit" size="icon" variant="ghost" className="absolute right-0 top-0 h-full rounded-full">
+      <Button
+        type="submit"
+        size="icon"
+        variant="ghost"
+        className="absolute right-0 top-0 h-full rounded-full hover:bg-primary hover:text-white"
+      >
         <Search className="h-4 w-4" />
         <span className="sr-only">Ara</span>
       </Button>

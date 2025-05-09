@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Textarea } from "@/components/ui/textarea"
 import { getSiteSettings, updateMultipleSettings } from "@/lib/admin-service"
 import { Loader2 } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface SettingsState {
   [key: string]: string
@@ -20,6 +22,7 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const { toast } = useToast()
+  const router = useRouter()
 
   useEffect(() => {
     async function fetchSettings() {
@@ -85,6 +88,9 @@ export default function AdminSettingsPage() {
         title: "Başarılı",
         description: "Ayarlar başarıyla güncellendi.",
       })
+
+      // Sayfayı yenile
+      router.refresh()
     } catch (error) {
       console.error("Ayarlar güncellenirken hata oluştu:", error)
       toast({
@@ -99,8 +105,16 @@ export default function AdminSettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-8 w-64 mb-2" />
+          <Skeleton className="h-4 w-full max-w-md" />
+        </div>
+        <Skeleton className="h-10 w-full max-w-md" />
+        <div className="space-y-4">
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
       </div>
     )
   }
@@ -113,7 +127,7 @@ export default function AdminSettingsPage() {
       </div>
 
       <Tabs defaultValue="general" className="space-y-4">
-        <TabsList>
+        <TabsList className="grid grid-cols-5 md:w-auto w-full">
           <TabsTrigger value="general">Genel</TabsTrigger>
           <TabsTrigger value="contact">İletişim</TabsTrigger>
           <TabsTrigger value="social">Sosyal Medya</TabsTrigger>
@@ -122,13 +136,13 @@ export default function AdminSettingsPage() {
         </TabsList>
 
         <TabsContent value="general" className="space-y-4">
-          <Card>
-            <CardHeader>
+          <Card className="border-none shadow-md">
+            <CardHeader className="bg-muted/50 rounded-t-lg">
               <CardTitle>Genel Ayarlar</CardTitle>
               <CardDescription>Sitenin genel ayarlarını buradan düzenleyebilirsiniz.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <CardContent className="space-y-4 pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="shipping_fee">Kargo Ücreti (₺)</Label>
                   <Input
@@ -136,6 +150,7 @@ export default function AdminSettingsPage() {
                     value={settings.shipping_fee || ""}
                     onChange={(e) => handleChange("shipping_fee", e.target.value)}
                     placeholder="0"
+                    className="focus-visible:ring-primary"
                   />
                   <p className="text-xs text-muted-foreground">0 = Ücretsiz kargo</p>
                 </div>
@@ -146,6 +161,7 @@ export default function AdminSettingsPage() {
                     value={settings.free_shipping_threshold || ""}
                     onChange={(e) => handleChange("free_shipping_threshold", e.target.value)}
                     placeholder="1000"
+                    className="focus-visible:ring-primary"
                   />
                 </div>
               </div>
@@ -157,11 +173,16 @@ export default function AdminSettingsPage() {
                   onChange={(e) => handleChange("about_short", e.target.value)}
                   placeholder="Divona Home, bahçe mobilyaları ve dış mekan dekorasyonu konusunda Türkiye'nin önde gelen markasıdır."
                   rows={3}
+                  className="focus-visible:ring-primary"
                 />
               </div>
             </CardContent>
-            <CardFooter>
-              <Button onClick={() => saveSettings("general")} disabled={saving}>
+            <CardFooter className="bg-muted/30 rounded-b-lg">
+              <Button
+                onClick={() => saveSettings("general")}
+                disabled={saving}
+                className="transition-all hover:shadow-md"
+              >
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -176,12 +197,12 @@ export default function AdminSettingsPage() {
         </TabsContent>
 
         <TabsContent value="contact" className="space-y-4">
-          <Card>
-            <CardHeader>
+          <Card className="border-none shadow-md">
+            <CardHeader className="bg-muted/50 rounded-t-lg">
               <CardTitle>İletişim Bilgileri</CardTitle>
               <CardDescription>Sitenin iletişim bilgilerini buradan düzenleyebilirsiniz.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-6">
               <div className="space-y-2">
                 <Label htmlFor="phone">Telefon Numarası</Label>
                 <Input
@@ -189,6 +210,7 @@ export default function AdminSettingsPage() {
                   value={settings.phone || ""}
                   onChange={(e) => handleChange("phone", e.target.value)}
                   placeholder="+90 212 123 45 67"
+                  className="focus-visible:ring-primary"
                 />
               </div>
               <div className="space-y-2">
@@ -198,6 +220,7 @@ export default function AdminSettingsPage() {
                   value={settings.email || ""}
                   onChange={(e) => handleChange("email", e.target.value)}
                   placeholder="info@divonahome.com"
+                  className="focus-visible:ring-primary"
                 />
               </div>
               <div className="space-y-2">
@@ -208,11 +231,16 @@ export default function AdminSettingsPage() {
                   onChange={(e) => handleChange("address", e.target.value)}
                   placeholder="Örnek Mahallesi, Örnek Caddesi No:123, İstanbul"
                   rows={3}
+                  className="focus-visible:ring-primary"
                 />
               </div>
             </CardContent>
-            <CardFooter>
-              <Button onClick={() => saveSettings("contact")} disabled={saving}>
+            <CardFooter className="bg-muted/30 rounded-b-lg">
+              <Button
+                onClick={() => saveSettings("contact")}
+                disabled={saving}
+                className="transition-all hover:shadow-md"
+              >
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -227,12 +255,12 @@ export default function AdminSettingsPage() {
         </TabsContent>
 
         <TabsContent value="social" className="space-y-4">
-          <Card>
-            <CardHeader>
+          <Card className="border-none shadow-md">
+            <CardHeader className="bg-muted/50 rounded-t-lg">
               <CardTitle>Sosyal Medya</CardTitle>
               <CardDescription>Sosyal medya hesaplarınızın bağlantılarını buradan düzenleyebilirsiniz.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-6">
               <div className="space-y-2">
                 <Label htmlFor="facebook_url">Facebook URL</Label>
                 <Input
@@ -240,6 +268,7 @@ export default function AdminSettingsPage() {
                   value={settings.facebook_url || ""}
                   onChange={(e) => handleChange("facebook_url", e.target.value)}
                   placeholder="https://facebook.com/divonahome"
+                  className="focus-visible:ring-primary"
                 />
               </div>
               <div className="space-y-2">
@@ -249,6 +278,7 @@ export default function AdminSettingsPage() {
                   value={settings.instagram_url || ""}
                   onChange={(e) => handleChange("instagram_url", e.target.value)}
                   placeholder="https://instagram.com/divonahome"
+                  className="focus-visible:ring-primary"
                 />
               </div>
               <div className="space-y-2">
@@ -258,6 +288,7 @@ export default function AdminSettingsPage() {
                   value={settings.twitter_url || ""}
                   onChange={(e) => handleChange("twitter_url", e.target.value)}
                   placeholder="https://twitter.com/divonahome"
+                  className="focus-visible:ring-primary"
                 />
               </div>
               <div className="space-y-2">
@@ -267,11 +298,16 @@ export default function AdminSettingsPage() {
                   value={settings.youtube_url || ""}
                   onChange={(e) => handleChange("youtube_url", e.target.value)}
                   placeholder="https://youtube.com/divonahome"
+                  className="focus-visible:ring-primary"
                 />
               </div>
             </CardContent>
-            <CardFooter>
-              <Button onClick={() => saveSettings("social")} disabled={saving}>
+            <CardFooter className="bg-muted/30 rounded-b-lg">
+              <Button
+                onClick={() => saveSettings("social")}
+                disabled={saving}
+                className="transition-all hover:shadow-md"
+              >
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -286,12 +322,12 @@ export default function AdminSettingsPage() {
         </TabsContent>
 
         <TabsContent value="payment" className="space-y-4">
-          <Card>
-            <CardHeader>
+          <Card className="border-none shadow-md">
+            <CardHeader className="bg-muted/50 rounded-t-lg">
               <CardTitle>Ödeme Bilgileri</CardTitle>
               <CardDescription>Banka hesap bilgilerinizi buradan düzenleyebilirsiniz.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-6">
               <div className="space-y-2">
                 <Label htmlFor="bank_name">Banka Adı</Label>
                 <Input
@@ -299,6 +335,7 @@ export default function AdminSettingsPage() {
                   value={settings.bank_name || ""}
                   onChange={(e) => handleChange("bank_name", e.target.value)}
                   placeholder="Örnek Bank"
+                  className="focus-visible:ring-primary"
                 />
               </div>
               <div className="space-y-2">
@@ -308,6 +345,7 @@ export default function AdminSettingsPage() {
                   value={settings.account_holder || ""}
                   onChange={(e) => handleChange("account_holder", e.target.value)}
                   placeholder="Divona Home Ltd. Şti."
+                  className="focus-visible:ring-primary"
                 />
               </div>
               <div className="space-y-2">
@@ -317,11 +355,16 @@ export default function AdminSettingsPage() {
                   value={settings.iban || ""}
                   onChange={(e) => handleChange("iban", e.target.value)}
                   placeholder="TR12 3456 7890 1234 5678 9012 34"
+                  className="focus-visible:ring-primary"
                 />
               </div>
             </CardContent>
-            <CardFooter>
-              <Button onClick={() => saveSettings("payment")} disabled={saving}>
+            <CardFooter className="bg-muted/30 rounded-b-lg">
+              <Button
+                onClick={() => saveSettings("payment")}
+                disabled={saving}
+                className="transition-all hover:shadow-md"
+              >
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -336,12 +379,12 @@ export default function AdminSettingsPage() {
         </TabsContent>
 
         <TabsContent value="whatsapp" className="space-y-4">
-          <Card>
-            <CardHeader>
+          <Card className="border-none shadow-md">
+            <CardHeader className="bg-muted/50 rounded-t-lg">
               <CardTitle>WhatsApp Ayarları</CardTitle>
               <CardDescription>WhatsApp iletişim bilgilerinizi buradan düzenleyebilirsiniz.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-6">
               <div className="space-y-2">
                 <Label htmlFor="whatsapp_number">WhatsApp Numarası</Label>
                 <Input
@@ -349,6 +392,7 @@ export default function AdminSettingsPage() {
                   value={settings.whatsapp_number || ""}
                   onChange={(e) => handleChange("whatsapp_number", e.target.value)}
                   placeholder="+905551234567"
+                  className="focus-visible:ring-primary"
                 />
                 <p className="text-xs text-muted-foreground">Uluslararası formatta girin (örn: +905551234567)</p>
               </div>
@@ -360,11 +404,16 @@ export default function AdminSettingsPage() {
                   onChange={(e) => handleChange("whatsapp_message", e.target.value)}
                   placeholder="Merhaba, Divona Home hakkında bilgi almak istiyorum."
                   rows={3}
+                  className="focus-visible:ring-primary"
                 />
               </div>
             </CardContent>
-            <CardFooter>
-              <Button onClick={() => saveSettings("whatsapp")} disabled={saving}>
+            <CardFooter className="bg-muted/30 rounded-b-lg">
+              <Button
+                onClick={() => saveSettings("whatsapp")}
+                disabled={saving}
+                className="transition-all hover:shadow-md"
+              >
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

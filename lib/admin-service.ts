@@ -1,5 +1,4 @@
 import { supabase } from "./supabase-client"
-import type { Product, Category } from "./supabase"
 
 // Define AdminUser type
 export type AdminUser = {
@@ -55,6 +54,35 @@ export type OrderItem = {
   product_id: number
   quantity: number
   price: number
+}
+
+// Kategori tipi
+export type Category = {
+  id: number
+  name: string
+  slug: string
+  description?: string
+  image_url?: string
+}
+
+// Ürün tipi
+export type Product = {
+  id: number
+  name: string
+  slug: string
+  description: string
+  price: number
+  original_price?: number
+  discount_percentage?: number
+  is_new?: boolean
+  is_on_sale?: boolean
+  stock: number
+  category_id: number
+  images: string[] // Client-side representation of images
+  image_urls?: string[] // Database column for image URLs
+  features?: string[]
+  specifications?: Record<string, string>
+  created_at: string
 }
 
 // Admin login function
@@ -275,98 +303,21 @@ export async function deleteProduct(id: number): Promise<void> {
   }
 }
 
-// Delete a product image
-export async function deleteProductImage(imageId: number): Promise<void> {
-  try {
-    const { error } = await supabase.from("product_images").delete().eq("id", imageId)
-
-    if (error) {
-      console.error(`Resim (ID: ${imageId}) silinirken hata:`, error.message)
-      throw new Error(error.message)
-    }
-  } catch (error) {
-    console.error(`Resim (ID: ${imageId}) silinirken hata:`, error)
-    throw error
-  }
-}
-
-// Get order details
-export async function getOrderDetails(orderId: number): Promise<any | null> {
-  try {
-    const { data, error } = await supabase
-      .from("orders")
-      .select(`*, order_items(*, product:products(name))`)
-      .eq("id", orderId)
-      .single()
-
-    if (error) {
-      console.error(`Sipariş detayları (ID: ${orderId}) alınırken hata:`, error.message)
-      return null
-    }
-
-    return data
-  } catch (error) {
-    console.error(`Sipariş detayları (ID: ${orderId}) alınırken hata:`, error)
-    return null
-  }
-}
-
-// Update order status
-export async function updateOrderStatus(orderId: number, status: string): Promise<boolean> {
-  try {
-    const { error } = await supabase
-      .from("orders")
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq("id", orderId)
-
-    if (error) {
-      console.error(`Sipariş durumu (ID: ${orderId}) güncellenirken hata:`, error.message)
-      return false
-    }
-
-    return true
-  } catch (error) {
-    console.error(`Sipariş durumu (ID: ${orderId}) güncellenirken hata:`, error)
-    return false
-  }
-}
-
 // Get site settings with fallback values
 export async function getSiteSettings(): Promise<any[]> {
   try {
-    // Check if Supabase URL is available
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
-      console.warn("Supabase URL veya Anon Key bulunamadı, varsayılan ayarlar kullanılıyor")
-      return getDefaultSettings()
-    }
-
     const { data, error } = await supabase.from("site_settings").select("*")
 
     if (error) {
       console.error("Site ayarları alınırken hata:", error.message)
-      return getDefaultSettings()
+      return []
     }
 
-    return data && data.length > 0 ? data : getDefaultSettings()
+    return data || []
   } catch (error) {
     console.error("Site ayarları alınırken hata:", error)
-    return getDefaultSettings()
+    return []
   }
-}
-
-// Default settings as fallback
-function getDefaultSettings() {
-  return [
-    { key: "site_name", value: "Mobilya Sitesi" },
-    { key: "site_description", value: "Kaliteli mobilya ürünleri" },
-    { key: "contact_email", value: "info@mobilyasitesi.com" },
-    { key: "contact_phone", value: "+90 555 123 4567" },
-    { key: "address", value: "İstanbul, Türkiye" },
-    { key: "shipping_fee", value: "50" },
-    { key: "free_shipping_threshold", value: "1000" },
-    { key: "whatsapp_number", value: "+90 555 123 4567" },
-    { key: "whatsapp_message", value: "Merhaba, ürünleriniz hakkında bilgi almak istiyorum." },
-  ]
 }
 
 // Update multiple settings
@@ -392,24 +343,7 @@ export async function updateMultipleSettings(settings: { key: string; value: str
   }
 }
 
-// Get all hero slides
-export async function getHeroSlides(): Promise<HeroSlide[]> {
-  try {
-    const { data, error } = await supabase.from("hero_slides").select("*").order("order_index")
-
-    if (error) {
-      console.error("Hero slaytları alınırken hata:", error.message)
-      throw new Error(error.message)
-    }
-
-    return (data as HeroSlide[]) || []
-  } catch (error) {
-    console.error("Hero slaytları alınırken hata:", error)
-    return []
-  }
-}
-
-// Create a new hero slide
+// Create a hero slide
 export async function createHeroSlide(slide: Omit<HeroSlide, "id">): Promise<HeroSlide | null> {
   try {
     const { data, error } = await supabase.from("hero_slides").insert([slide]).select().single()
@@ -458,7 +392,7 @@ export async function deleteHeroSlide(id: number): Promise<void> {
   }
 }
 
-// Update order index for hero slides
+// Update hero slide order
 export async function updateHeroSlideOrder(slides: { id: number; order_index: number }[]): Promise<void> {
   try {
     for (const slide of slides) {
@@ -472,6 +406,44 @@ export async function updateHeroSlideOrder(slides: { id: number; order_index: nu
   } catch (error) {
     console.error("Hero slayt sırası güncellenirken hata:", error)
     throw error
+  }
+}
+
+// Get order details
+export async function getOrderDetails(orderId: number): Promise<Order | null> {
+  try {
+    const { data, error } = await supabase
+      .from("orders")
+      .select(`*, order_items(*, products(*))`)
+      .eq("id", orderId)
+      .single()
+
+    if (error) {
+      console.error(`Sipariş detayları (ID: ${orderId}) alınırken hata:`, error.message)
+      throw new Error(error.message)
+    }
+
+    return data as Order
+  } catch (error) {
+    console.error(`Sipariş detayları (ID: ${orderId}) alınırken hata:`, error)
+    return null
+  }
+}
+
+// Update order status
+export async function updateOrderStatus(orderId: number, status: string): Promise<boolean> {
+  try {
+    const { error } = await supabase.from("orders").update({ status }).eq("id", orderId)
+
+    if (error) {
+      console.error(`Sipariş durumu (ID: ${orderId}) güncellenirken hata:`, error.message)
+      return false
+    }
+
+    return true
+  } catch (error) {
+    console.error(`Sipariş durumu (ID: ${orderId}) güncellenirken hata:`, error)
+    return false
   }
 }
 
@@ -505,22 +477,56 @@ export async function getUsers(
   }
 }
 
-// Get all orders with optional filtering
+// Get all hero slides
+export async function getHeroSlides(): Promise<HeroSlide[]> {
+  try {
+    const { data, error } = await supabase.from("hero_slides").select("*").order("order_index", { ascending: true })
+
+    if (error) {
+      console.error("Hero slaytları alınırken hata:", error.message)
+      throw new Error(error.message)
+    }
+
+    return data as HeroSlide[]
+  } catch (error) {
+    console.error("Hero slaytları alınırken hata:", error)
+    return []
+  }
+}
+
+// Delete product image
+export async function deleteProductImage(imageId: number): Promise<void> {
+  try {
+    const { error } = await supabase.from("product_images").delete().eq("id", imageId)
+
+    if (error) {
+      console.error(`Ürün resmi (ID: ${imageId}) silinirken hata:`, error.message)
+      throw new Error(error.message)
+    }
+  } catch (error) {
+    console.error(`Ürün resmi (ID: ${imageId}) silinirken hata:`, error)
+    throw error
+  }
+}
+
+// Function to get orders with pagination and search
 export async function getOrders(
-  page = 1,
-  itemsPerPage = 10,
+  page: number,
+  itemsPerPage: number,
   statusFilter?: string,
   searchTerm?: string,
-): Promise<{ orders: any[]; totalCount: number }> {
+): Promise<{ orders: Order[]; totalCount: number }> {
   try {
     let query = supabase.from("orders").select("*", { count: "exact" })
 
+    // Apply status filter
     if (statusFilter && statusFilter !== "all") {
       query = query.eq("status", statusFilter)
     }
 
+    // Apply search filter
     if (searchTerm) {
-      query = query.ilike("id", `%${searchTerm}%`)
+      query = query.ilike("shipping_address", `%${searchTerm}%`)
     }
 
     const from = (page - 1) * itemsPerPage
@@ -533,7 +539,7 @@ export async function getOrders(
       throw new Error(error.message)
     }
 
-    return { orders: data || [], totalCount: count || 0 }
+    return { orders: data as Order[], totalCount: count || 0 }
   } catch (error) {
     console.error("Siparişler alınırken hata:", error)
     return { orders: [], totalCount: 0 }

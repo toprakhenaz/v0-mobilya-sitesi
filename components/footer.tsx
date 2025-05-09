@@ -3,10 +3,24 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useAuth } from "@/contexts/auth-context"
-import { Shield, CreditCard, Truck, Award } from "lucide-react"
+import {
+  Shield,
+  CreditCard,
+  Truck,
+  Award,
+  Phone,
+  Mail,
+  MapPin,
+  Facebook,
+  Instagram,
+  Twitter,
+  Youtube,
+} from "lucide-react"
 import Logo from "./logo"
 import { useSiteSettings } from "@/contexts/site-settings-context"
 import MobileBottomNav from "./mobile-bottom-nav"
+import { Button } from "./ui/button"
+import { Input } from "./ui/input"
 
 export default function Footer() {
   const { user } = useAuth()
@@ -16,7 +30,7 @@ export default function Footer() {
 
   // İletişim bilgileri
   const phone = getSetting("phone") || getSetting("telefon_numarasi") || "0 850 305 86 07"
-  const email = getSetting("email") || "info@divonahome.com"
+  const email = getSetting("email") || "info@divonagarden.com"
   const address = getSetting("address") || getSetting("adres") || "İmişehir OSB 2001 Cadde No:16 Odunpazarı / ESKİŞEHİR"
 
   // Sosyal medya bağlantıları
@@ -29,135 +43,187 @@ export default function Footer() {
   const aboutShort =
     getSetting("about_short") ||
     getSetting("kisa_bilgi") ||
-    "Divona Home, bahçe mobilyaları ve dış mekan dekorasyonu konusunda Türkiye'nin önde gelen markasıdır. Kaliteli ve şık ürünlerimizle bahçenizi güzelleştiriyoruz."
+    "Divona Garden, bahçe mobilyaları ve dış mekan dekorasyonu konusunda Türkiye'nin önde gelen markasıdır. Kaliteli ve şık ürünlerimizle bahçenizi güzelleştiriyoruz."
 
   return (
     <footer className="bg-white">
-      {/* Trust Badges */}
-      <div className="border-t border-b py-6">
+      {/* Newsletter Section */}
+      <div className="bg-primary-50 py-12">
         <div className="container-custom">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="flex items-center justify-center md:justify-start">
-              <Shield className="h-8 w-8 text-primary mr-3" />
-              <div>
-                <h4 className="font-semibold text-sm">Güvenli Alışveriş</h4>
-                <p className="text-xs text-gray-500">256-bit SSL Güvenliği</p>
-              </div>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="text-center md:text-left">
+              <h3 className="text-xl font-bold mb-2">Bültenimize Abone Olun</h3>
+              <p className="text-gray-600">En yeni ürünler ve kampanyalardan haberdar olun</p>
             </div>
-            <div className="flex items-center justify-center md:justify-start">
-              <CreditCard className="h-8 w-8 text-primary mr-3" />
-              <div>
-                <h4 className="font-semibold text-sm">Güvenli Ödeme</h4>
-                <p className="text-xs text-gray-500">Tüm Kredi Kartları</p>
-              </div>
+            <div className="w-full md:w-auto flex-1 max-w-md">
+              <form className="flex gap-2">
+                <Input
+                  type="email"
+                  placeholder="E-posta adresiniz"
+                  className="flex-1 bg-white border-primary-200 focus:border-primary focus:ring-primary"
+                />
+                <Button type="submit">Abone Ol</Button>
+              </form>
             </div>
-            <div className="flex items-center justify-center md:justify-start">
-              <Truck className="h-8 w-8 text-primary mr-3" />
-              <div>
-                <h4 className="font-semibold text-sm">Hızlı Teslimat</h4>
-                <p className="text-xs text-gray-500">Tüm Türkiye'ye</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Trust Badges */}
+      <div className="border-t border-b py-8">
+        <div className="container-custom">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="bg-primary-50 rounded-full p-4 mb-3">
+                <Shield className="h-6 w-6 text-primary" />
               </div>
+              <h4 className="font-semibold text-sm">Güvenli Alışveriş</h4>
+              <p className="text-xs text-gray-500 mt-1">256-bit SSL Güvenliği</p>
             </div>
-            <div className="flex items-center justify-center md:justify-start">
-              <Award className="h-8 w-8 text-primary mr-3" />
-              <div>
-                <h4 className="font-semibold text-sm">Kalite Garantisi</h4>
-                <p className="text-xs text-gray-500">2 Yıl Garanti</p>
+            <div className="flex flex-col items-center text-center">
+              <div className="bg-primary-50 rounded-full p-4 mb-3">
+                <CreditCard className="h-6 w-6 text-primary" />
               </div>
+              <h4 className="font-semibold text-sm">Güvenli Ödeme</h4>
+              <p className="text-xs text-gray-500 mt-1">Tüm Kredi Kartları</p>
+            </div>
+            <div className="flex flex-col items-center text-center">
+              <div className="bg-primary-50 rounded-full p-4 mb-3">
+                <Truck className="h-6 w-6 text-primary" />
+              </div>
+              <h4 className="font-semibold text-sm">Hızlı Teslimat</h4>
+              <p className="text-xs text-gray-500 mt-1">Tüm Türkiye'ye</p>
+            </div>
+            <div className="flex flex-col items-center text-center">
+              <div className="bg-primary-50 rounded-full p-4 mb-3">
+                <Award className="h-6 w-6 text-primary" />
+              </div>
+              <h4 className="font-semibold text-sm">Kalite Garantisi</h4>
+              <p className="text-xs text-gray-500 mt-1">2 Yıl Garanti</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Footer */}
-      <div className="container-custom py-8">
+      <div className="container-custom py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo ve İletişim */}
           <div className="md:col-span-1">
-            <Link href="/" className="flex items-center">
-              <Logo size="medium" className="mb-4" />
+            <Link href="/" className="inline-block mb-6">
+              {/* Footer için özel olarak large boyutunda logo kullanıyoruz */}
+              <Logo size="large" className="transform scale-110" />
             </Link>
             {/* Kısa bilgi kısmını güncelleyelim */}
-            <p className="text-gray-600 text-sm mb-4">{aboutShort}</p>
+            <p className="text-gray-600 text-sm mb-6">{aboutShort}</p>
 
             {/* İletişim Bilgileri - Mobil ve Desktop */}
-            <div className="mt-4">
-              <div className="flex items-center mb-2">
-                <div className="bg-primary/10 rounded-full p-2 mr-3">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="text-primary"
-                  >
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                  </svg>
+            <div className="space-y-3">
+              <div className="flex items-center">
+                <div className="bg-primary-50 rounded-full p-2 mr-3">
+                  <Phone className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <h4 className="font-medium">Müşteri Hizmetleri</h4>
-                  <p>{phone}</p>
+                  <p className="font-medium">{phone}</p>
                 </div>
               </div>
-              <p className="text-sm text-gray-500 ml-12">{address}</p>
+              <div className="flex items-center">
+                <div className="bg-primary-50 rounded-full p-2 mr-3">
+                  <Mail className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">{email}</p>
+                </div>
+              </div>
+              <div className="flex items-start">
+                <div className="bg-primary-50 rounded-full p-2 mr-3 mt-1">
+                  <MapPin className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">{address}</p>
+                </div>
+              </div>
             </div>
 
             {/* Sosyal Medya - Mobil ve Desktop */}
-            <div className="flex space-x-3 mt-4">
-              <Link href={facebookUrl} className="bg-blue-600 text-white rounded-full p-2 hover:opacity-80 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M18.77 7.46H14.5v-1.9c0-.9.6-1.1 1-1.1h3V.5h-4.33C10.24.5 9.5 3.44 9.5 5.32v2.15h-3v4h3v12h5v-12h3.85l.42-4z" />
-                </svg>
+            <div className="flex space-x-3 mt-6">
+              <Link
+                href={facebookUrl}
+                className="bg-primary-50 text-primary hover:bg-primary hover:text-white transition-colors rounded-full p-2"
+                aria-label="Facebook"
+              >
+                <Facebook className="h-5 w-5" />
               </Link>
-              <Link href={instagramUrl} className="bg-pink-600 text-white rounded-full p-2 hover:opacity-80 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
-                </svg>
+              <Link
+                href={instagramUrl}
+                className="bg-primary-50 text-primary hover:bg-primary hover:text-white transition-colors rounded-full p-2"
+                aria-label="Instagram"
+              >
+                <Instagram className="h-5 w-5" />
               </Link>
-              <Link href={youtubeUrl} className="bg-red-600 text-white rounded-full p-2 hover:opacity-80 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" />
-                </svg>
+              <Link
+                href={twitterUrl}
+                className="bg-primary-50 text-primary hover:bg-primary hover:text-white transition-colors rounded-full p-2"
+                aria-label="Twitter"
+              >
+                <Twitter className="h-5 w-5" />
               </Link>
-              <Link href={twitterUrl} className="bg-blue-700 text-white rounded-full p-2 hover:opacity-80 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M4.98 3.5c0 1.381-1.11 2.5-2.48 2.5s-2.48-1.119-2.48-2.5c0-1.38 1.11-2.5 2.48-2.5s2.48 1.12 2.48 2.5zm.02 4.5h-5v16h5v-16zm7.982 0h-4.968v16h4.969v-8.399c0-4.67 6.029-5.052 6.029 0v8.399h4.988v-10.131c0-7.88-8.922-7.593-11.018-3.714v-2.155z" />
-                </svg>
+              <Link
+                href={youtubeUrl}
+                className="bg-primary-50 text-primary hover:bg-primary hover:text-white transition-colors rounded-full p-2"
+                aria-label="Youtube"
+              >
+                <Youtube className="h-5 w-5" />
               </Link>
             </div>
           </div>
 
           {/* Kategoriler */}
           <div>
-            <h3 className="font-bold mb-4">Kategoriler</h3>
+            <h3 className="font-bold text-lg mb-4 pb-2 border-b">Kategoriler</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/bahce-oturma-grubu" className="text-gray-600 hover:text-primary">
+                <Link
+                  href="/bahce-oturma-grubu"
+                  className="text-gray-600 hover:text-primary transition-colors flex items-center"
+                >
+                  <span className="mr-2">•</span>
                   Bahçe Oturma Grubu
                 </Link>
               </li>
               <li>
-                <Link href="/kategori/bahce-kose-takimi" className="text-gray-600 hover:text-primary">
+                <Link
+                  href="/kategori/bahce-kose-takimi"
+                  className="text-gray-600 hover:text-primary transition-colors flex items-center"
+                >
+                  <span className="mr-2">•</span>
                   Bahçe Köşe Takımı
                 </Link>
               </li>
               <li>
-                <Link href="/kategori/masa-takimi" className="text-gray-600 hover:text-primary">
+                <Link
+                  href="/kategori/masa-takimi"
+                  className="text-gray-600 hover:text-primary transition-colors flex items-center"
+                >
+                  <span className="mr-2">•</span>
                   Masa Takımı
                 </Link>
               </li>
               <li>
-                <Link href="/kategori/sezlong" className="text-gray-600 hover:text-primary">
+                <Link
+                  href="/kategori/sezlong"
+                  className="text-gray-600 hover:text-primary transition-colors flex items-center"
+                >
+                  <span className="mr-2">•</span>
                   Şezlong
                 </Link>
               </li>
               <li>
-                <Link href="/kategori/sandalye" className="text-gray-600 hover:text-primary">
+                <Link
+                  href="/kategori/sandalye"
+                  className="text-gray-600 hover:text-primary transition-colors flex items-center"
+                >
+                  <span className="mr-2">•</span>
                   Sandalye
                 </Link>
               </li>
@@ -166,40 +232,65 @@ export default function Footer() {
 
           {/* Kurumsal */}
           <div>
-            <h3 className="font-bold mb-4">Kurumsal</h3>
+            <h3 className="font-bold text-lg mb-4 pb-2 border-b">Kurumsal</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/hakkimizda" className="text-gray-600 hover:text-primary">
+                <Link
+                  href="/hakkimizda"
+                  className="text-gray-600 hover:text-primary transition-colors flex items-center"
+                >
+                  <span className="mr-2">•</span>
                   Hakkımızda
                 </Link>
               </li>
               <li>
-                <Link href="/iletisim" className="text-gray-600 hover:text-primary">
+                <Link href="/iletisim" className="text-gray-600 hover:text-primary transition-colors flex items-center">
+                  <span className="mr-2">•</span>
                   İletişim
                 </Link>
               </li>
               <li>
-                <Link href="/kullanim-kosullari" className="text-gray-600 hover:text-primary">
+                <Link
+                  href="/kullanim-kosullari"
+                  className="text-gray-600 hover:text-primary transition-colors flex items-center"
+                >
+                  <span className="mr-2">•</span>
                   Kullanım Koşulları
                 </Link>
               </li>
               <li>
-                <Link href="/gizlilik-politikasi" className="text-gray-600 hover:text-primary">
+                <Link
+                  href="/gizlilik-politikasi"
+                  className="text-gray-600 hover:text-primary transition-colors flex items-center"
+                >
+                  <span className="mr-2">•</span>
                   Gizlilik Politikası
                 </Link>
               </li>
               <li>
-                <Link href="/iade-kosullari" className="text-gray-600 hover:text-primary">
+                <Link
+                  href="/iade-kosullari"
+                  className="text-gray-600 hover:text-primary transition-colors flex items-center"
+                >
+                  <span className="mr-2">•</span>
                   İade Koşulları
                 </Link>
               </li>
               <li>
-                <Link href="/sikca-sorulan-sorular" className="text-gray-600 hover:text-primary">
+                <Link
+                  href="/sikca-sorulan-sorular"
+                  className="text-gray-600 hover:text-primary transition-colors flex items-center"
+                >
+                  <span className="mr-2">•</span>
                   Sıkça Sorulan Sorular
                 </Link>
               </li>
               <li>
-                <Link href="/magaza-konumlari" className="text-gray-600 hover:text-primary">
+                <Link
+                  href="/magaza-konumlari"
+                  className="text-gray-600 hover:text-primary transition-colors flex items-center"
+                >
+                  <span className="mr-2">•</span>
                   Mağaza Konumları
                 </Link>
               </li>
@@ -208,27 +299,43 @@ export default function Footer() {
 
           {/* Hesabım */}
           <div>
-            <h3 className="font-semibold mb-4">Hesabım</h3>
+            <h3 className="font-bold text-lg mb-4 pb-2 border-b">Hesabım</h3>
             <ul className="space-y-2">
               {user ? (
                 <>
                   <li>
-                    <Link href="/hesabim" className="text-gray-600 hover:text-primary">
+                    <Link
+                      href="/hesabim"
+                      className="text-gray-600 hover:text-primary transition-colors flex items-center"
+                    >
+                      <span className="mr-2">•</span>
                       Hesabım
                     </Link>
                   </li>
                   <li>
-                    <Link href="/hesabim/siparislerim" className="text-gray-600 hover:text-primary">
+                    <Link
+                      href="/hesabim/siparislerim"
+                      className="text-gray-600 hover:text-primary transition-colors flex items-center"
+                    >
+                      <span className="mr-2">•</span>
                       Siparişlerim
                     </Link>
                   </li>
                   <li>
-                    <Link href="/hesabim/favorilerim" className="text-gray-600 hover:text-primary">
+                    <Link
+                      href="/hesabim/favorilerim"
+                      className="text-gray-600 hover:text-primary transition-colors flex items-center"
+                    >
+                      <span className="mr-2">•</span>
                       Favorilerim
                     </Link>
                   </li>
                   <li>
-                    <Link href="/hesabim/adreslerim" className="text-gray-600 hover:text-primary">
+                    <Link
+                      href="/hesabim/adreslerim"
+                      className="text-gray-600 hover:text-primary transition-colors flex items-center"
+                    >
+                      <span className="mr-2">•</span>
                       Adreslerim
                     </Link>
                   </li>
@@ -236,19 +343,31 @@ export default function Footer() {
               ) : (
                 <>
                   <li>
-                    <Link href="/giris-yap" className="text-gray-600 hover:text-primary">
+                    <Link
+                      href="/giris-yap"
+                      className="text-gray-600 hover:text-primary transition-colors flex items-center"
+                    >
+                      <span className="mr-2">•</span>
                       Giriş Yap
                     </Link>
                   </li>
                   <li>
-                    <Link href="/uye-ol" className="text-gray-600 hover:text-primary">
+                    <Link
+                      href="/uye-ol"
+                      className="text-gray-600 hover:text-primary transition-colors flex items-center"
+                    >
+                      <span className="mr-2">•</span>
                       Üye Ol
                     </Link>
                   </li>
                 </>
               )}
               <li>
-                <Link href="/siparis-takibi" className="text-gray-600 hover:text-primary">
+                <Link
+                  href="/siparis-takibi"
+                  className="text-gray-600 hover:text-primary transition-colors flex items-center"
+                >
+                  <span className="mr-2">•</span>
                   Sipariş Takibi
                 </Link>
               </li>
@@ -257,9 +376,9 @@ export default function Footer() {
         </div>
 
         {/* International Shipping Flags */}
-        <div className="mt-8 pt-8 border-t">
-          <h3 className="font-bold mb-4 text-center">Uluslararası Gönderim</h3>
-          <div className="flex flex-wrap justify-center gap-6 items-center mb-6">
+
+        <div className="mt-12 pt-8 border-t">
+          <div className="flex flex-wrap justify-center gap-6 items-center mb-8">
             <div className="w-12 h-12 overflow-hidden rounded-full border-2 border-gray-200 hover:border-primary transition-all">
               <Image
                 src="/flags/turkey-flag.png"
@@ -318,11 +437,24 @@ export default function Footer() {
 
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-600 text-sm mb-4 md:mb-0">
-              © {new Date().getFullYear()} Divona Home. Tüm hakları saklıdır.
+              © {new Date().getFullYear()} Divona Garden. Tüm hakları saklıdır.
             </p>
+
+            <div className="flex gap-4">
+              <Link href="/ssl-sertifikasi" className="text-xs text-gray-500 hover:text-primary transition-colors">
+                SSL Sertifikası
+              </Link>
+              <Link href="/guvenli-alisveris" className="text-xs text-gray-500 hover:text-primary transition-colors">
+                Güvenli Alışveriş
+              </Link>
+              <Link href="/kvkk" className="text-xs text-gray-500 hover:text-primary transition-colors">
+                KVKK
+              </Link>
+            </div>
           </div>
-          <div className="mt-6 flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center mb-4 md:mb-0">
+
+          <div className="mt-6 flex justify-center items-center">
+            <div className="flex items-center">
               <Link href="https://etbis.gov.tr" target="_blank" rel="noopener noreferrer" className="mr-4">
                 <Image src="/etbis-qr.png" alt="ETBIS" width={100} height={100} className="object-contain" />
               </Link>
@@ -331,19 +463,6 @@ export default function Footer() {
                 <p className="text-xs text-gray-500 font-bold">ETBİS'e Kayıtlıdır</p>
                 <p className="text-xs text-gray-500">Güvenli E-Ticaret</p>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <Link href="/ssl-sertifikasi" className="text-xs text-gray-500 hover:underline">
-                SSL Sertifikası
-              </Link>
-              <span className="text-gray-300">|</span>
-              <Link href="/guvenli-alisveris" className="text-xs text-gray-500 hover:underline">
-                Güvenli Alışveriş
-              </Link>
-              <span className="text-gray-300">|</span>
-              <Link href="/kvkk" className="text-xs text-gray-500 hover:underline">
-                KVKK
-              </Link>
             </div>
           </div>
         </div>

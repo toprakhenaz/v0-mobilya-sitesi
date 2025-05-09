@@ -12,6 +12,16 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "Divona Home - Bahçe Mobilyaları",
   description: "Bahçe mobilyaları ve dış mekan dekorasyonu için Divona Home",
+  icons: [
+    {
+      rel: "icon",
+      url: "/divona-garden-logo-new.png",
+    },
+    {
+      rel: "apple-touch-icon",
+      url: "/divona-garden-logo-new.png",
+    },
+  ],
     generator: 'v0.dev'
 }
 
@@ -22,6 +32,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr">
+      <head>
+        <link rel="icon" href="/divona-garden-logo-new.png" />
+        <link rel="apple-touch-icon" href="/divona-garden-logo-new.png" />
+      </head>
       <body className={inter.className}>
         <SiteSettingsProvider>
           <AuthProvider>

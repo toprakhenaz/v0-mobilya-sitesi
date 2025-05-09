@@ -8,7 +8,7 @@ import ProductCard from "@/components/product-card"
 import { Button } from "@/components/ui/button"
 import { getFeaturedProducts, getSaleProducts, getCategories } from "@/lib/product-service"
 import type { Product, Category } from "@/lib/supabase"
-import { Loader2 } from "lucide-react"
+import { Loader2, ArrowRight } from "lucide-react"
 
 // Category image mapping
 const categoryImages: Record<string, string> = {
@@ -146,15 +146,20 @@ export default function Home() {
       <HeroCarouselDynamic />
 
       {/* Kategoriler - Smaller and at the top */}
-      <section className="py-6 bg-gray-50">
+      <section className="py-10 bg-gradient-to-b from-white to-primary-50">
         <div className="container-custom">
-          <h2 className="text-xl font-bold mb-4">Kategoriler</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {categories.slice(0, 8).map((category) => (
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">Kategoriler</h2>
+            <Link href="/kategoriler" className="text-primary hover:underline flex items-center">
+              Tümünü Gör <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {categories.slice(0, 10).map((category) => (
               <Link
                 key={category.slug}
                 href={`/kategori/${category.slug}`}
-                className="group relative overflow-hidden rounded-lg h-24 flex items-center justify-center"
+                className="group relative overflow-hidden rounded-lg h-28 flex items-center justify-center"
               >
                 <Image
                   src={
@@ -163,35 +168,30 @@ export default function Home() {
                   }
                   alt={category.name}
                   fill
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-black bg-opacity-40 group-hover:bg-opacity-30"></div>
-                <h3 className="relative z-10 text-white text-center font-medium px-2">{category.name}</h3>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/10 group-hover:from-black/70 transition-all duration-300"></div>
+                <h3 className="relative z-10 text-white text-center font-medium px-2 transform group-hover:scale-105 transition-transform duration-300">
+                  {category.name}
+                </h3>
               </Link>
             ))}
-          </div>
-          <div className="text-center mt-3">
-            <Link href="/kategoriler">
-              <Button variant="outline" size="sm">
-                Tüm Kategoriler
-              </Button>
-            </Link>
           </div>
         </div>
       </section>
 
-      {/* Kampanyalı Ürünler - Now first */}
-      <section className="py-8 bg-accent">
+      {/* Kampanyalı Ürünler */}
+      <section className="py-12 bg-primary-50">
         <div className="container-custom">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold">Kampanyalı Ürünler</h2>
-            <Link href="/kampanyali-urunler" className="text-primary hover:underline">
-              Tümünü Gör
+            <Link href="/kampanyali-urunler" className="text-primary hover:underline flex items-center">
+              Tümünü Gör <ArrowRight className="ml-1 h-4 w-4" />
             </Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {saleProducts.length > 0 ? (
-              saleProducts.map((product) => <ProductCard key={product.id} product={product} />)
+              saleProducts.map((product) => <ProductCard key={product.id} product={product} showQuickActions={true} />)
             ) : (
               <p className="col-span-full text-center py-8">Kampanyalı ürün bulunamadı.</p>
             )}
@@ -199,45 +199,147 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Öne Çıkan Ürünler - Now second */}
-      <section className="py-8">
+      {/* Öne Çıkan Ürünler */}
+      <section className="py-12 bg-white">
         <div className="container-custom">
-          <h2 className="text-2xl font-bold mb-6">Öne Çıkan Ürünler</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">Öne Çıkan Ürünler</h2>
+            <Link href="/urunler" className="text-primary hover:underline flex items-center">
+              Tümünü Gör <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {featuredProducts.length > 0 ? (
-              featuredProducts.map((product) => <ProductCard key={product.id} product={product} />)
+              featuredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} showQuickActions={true} />
+              ))
             ) : (
               <p className="col-span-full text-center py-8">Öne çıkan ürün bulunamadı.</p>
             )}
-          </div>
-          <div className="text-center mt-8">
-            <Link href="/urunler">
-              <Button variant="outline" size="lg">
-                Tüm Ürünleri Gör
-              </Button>
-            </Link>
           </div>
         </div>
       </section>
 
       {/* Bilgi Bölümü */}
-      <section className="py-8">
+      <section className="py-12 bg-gradient-to-b from-white to-primary-50">
         <div className="container-custom">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow-card text-center">
-              <div className="text-primary text-4xl mb-4">✓</div>
-              <h3 className="font-bold text-lg mb-2">Kaliteli Ürünler</h3>
+            <div className="bg-white p-8 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 text-center">
+              <div className="bg-primary-50 text-primary rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              </div>
+              <h3 className="font-bold text-lg mb-3">Kaliteli Ürünler</h3>
               <p className="text-gray-600">En kaliteli malzemelerden üretilen dayanıklı bahçe mobilyaları</p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-card text-center">
-              <div className="text-primary text-4xl mb-4">🚚</div>
-              <h3 className="font-bold text-lg mb-2">Ücretsiz Kargo</h3>
+            <div className="bg-white p-8 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 text-center">
+              <div className="bg-primary-50 text-primary rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="1" y="3" width="15" height="13"></rect>
+                  <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                  <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                  <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                </svg>
+              </div>
+              <h3 className="font-bold text-lg mb-3">Ücretsiz Kargo</h3>
               <p className="text-gray-600">5000 TL ve üzeri siparişlerde Türkiye'nin her yerine ücretsiz kargo</p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-card text-center">
-              <div className="text-primary text-4xl mb-4">💰</div>
-              <h3 className="font-bold text-lg mb-2">Güvenli Ödeme</h3>
+            <div className="bg-white p-8 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 text-center">
+              <div className="bg-primary-50 text-primary rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </div>
+              <h3 className="font-bold text-lg mb-3">Güvenli Ödeme</h3>
               <p className="text-gray-600">Banka havalesi/EFT ile güvenli ödeme imkanı</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Müşteri Yorumları */}
+      <section className="py-12 bg-white">
+        <div className="container-custom">
+          <h2 className="text-2xl font-bold mb-8 text-center">Müşterilerimiz Ne Diyor?</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-primary-50 p-6 rounded-lg relative">
+              <div className="text-primary text-4xl absolute -top-4 left-4">"</div>
+              <p className="text-gray-700 mb-4 mt-2">
+                Bahçe mobilyalarının kalitesi gerçekten çok iyi. Geçen yaz aldığım oturma grubu hala ilk günkü gibi
+                duruyor.
+              </p>
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold">
+                  AY
+                </div>
+                <div className="ml-3">
+                  <p className="font-medium">Ayşe Yılmaz</p>
+                  <p className="text-sm text-gray-500">İstanbul</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-primary-50 p-6 rounded-lg relative">
+              <div className="text-primary text-4xl absolute -top-4 left-4">"</div>
+              <p className="text-gray-700 mb-4 mt-2">
+                Siparişim çok hızlı geldi ve kurulum ekibi çok profesyoneldi. Kesinlikle tekrar alışveriş yapacağım.
+              </p>
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold">
+                  MK
+                </div>
+                <div className="ml-3">
+                  <p className="font-medium">Mehmet Kaya</p>
+                  <p className="text-sm text-gray-500">Ankara</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-primary-50 p-6 rounded-lg relative">
+              <div className="text-primary text-4xl absolute -top-4 left-4">"</div>
+              <p className="text-gray-700 mb-4 mt-2">
+                Ürünlerin tasarımı ve kalitesi beklentilerimin üzerinde çıktı. Bahçem artık çok daha şık görünüyor.
+              </p>
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold">
+                  EÇ
+                </div>
+                <div className="ml-3">
+                  <p className="font-medium">Elif Çelik</p>
+                  <p className="text-sm text-gray-500">İzmir</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

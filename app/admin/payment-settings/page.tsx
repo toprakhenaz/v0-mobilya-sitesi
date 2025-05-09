@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { getSiteSettings, updateMultipleSettings } from "@/lib/admin-service"
 import { Loader2 } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function AdminPaymentSettingsPage() {
   const [settings, setSettings] = useState({
@@ -20,6 +22,7 @@ export default function AdminPaymentSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const { toast } = useToast()
+  const router = useRouter()
 
   useEffect(() => {
     async function fetchSettings() {
@@ -74,6 +77,9 @@ export default function AdminPaymentSettingsPage() {
         title: "Başarılı",
         description: "Ödeme ayarları başarıyla güncellendi.",
       })
+
+      // Sayfayı yenile
+      router.refresh()
     } catch (error) {
       console.error("Ayarlar güncellenirken hata oluştu:", error)
       toast({
@@ -88,8 +94,15 @@ export default function AdminPaymentSettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-8 w-64 mb-2" />
+          <Skeleton className="h-4 w-full max-w-md" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
       </div>
     )
   }
@@ -104,12 +117,12 @@ export default function AdminPaymentSettingsPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
+        <Card className="border-none shadow-md transition-all hover:shadow-lg">
+          <CardHeader className="bg-muted/50 rounded-t-lg">
             <CardTitle>Banka Hesap Bilgileri</CardTitle>
             <CardDescription>Havale/EFT ödemeleri için banka hesap bilgilerinizi düzenleyin.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-6">
             <div className="space-y-2">
               <Label htmlFor="bank_name">Banka Adı</Label>
               <Input
@@ -117,6 +130,7 @@ export default function AdminPaymentSettingsPage() {
                 value={settings.bank_name}
                 onChange={(e) => handleChange("bank_name", e.target.value)}
                 placeholder="Örnek Bank"
+                className="focus-visible:ring-primary"
               />
             </div>
             <div className="space-y-2">
@@ -126,6 +140,7 @@ export default function AdminPaymentSettingsPage() {
                 value={settings.account_holder}
                 onChange={(e) => handleChange("account_holder", e.target.value)}
                 placeholder="Divona Home Ltd. Şti."
+                className="focus-visible:ring-primary"
               />
             </div>
             <div className="space-y-2">
@@ -135,11 +150,12 @@ export default function AdminPaymentSettingsPage() {
                 value={settings.iban}
                 onChange={(e) => handleChange("iban", e.target.value)}
                 placeholder="TR12 3456 7890 1234 5678 9012 34"
+                className="focus-visible:ring-primary"
               />
             </div>
           </CardContent>
-          <CardFooter>
-            <Button onClick={saveSettings} disabled={saving}>
+          <CardFooter className="bg-muted/30 rounded-b-lg">
+            <Button onClick={saveSettings} disabled={saving} className="transition-all hover:shadow-md">
               {saving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -152,12 +168,12 @@ export default function AdminPaymentSettingsPage() {
           </CardFooter>
         </Card>
 
-        <Card>
-          <CardHeader>
+        <Card className="border-none shadow-md transition-all hover:shadow-lg">
+          <CardHeader className="bg-muted/50 rounded-t-lg">
             <CardTitle>Kargo Ayarları</CardTitle>
             <CardDescription>Kargo ücretlendirme ayarlarınızı düzenleyin.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-6">
             <div className="space-y-2">
               <Label htmlFor="shipping_fee">Kargo Ücreti (₺)</Label>
               <Input
@@ -165,6 +181,7 @@ export default function AdminPaymentSettingsPage() {
                 value={settings.shipping_fee}
                 onChange={(e) => handleChange("shipping_fee", e.target.value)}
                 placeholder="0"
+                className="focus-visible:ring-primary"
               />
               <p className="text-xs text-muted-foreground">0 = Ücretsiz kargo</p>
             </div>
@@ -175,14 +192,15 @@ export default function AdminPaymentSettingsPage() {
                 value={settings.free_shipping_threshold}
                 onChange={(e) => handleChange("free_shipping_threshold", e.target.value)}
                 placeholder="1000"
+                className="focus-visible:ring-primary"
               />
               <p className="text-xs text-muted-foreground">
                 Bu tutarın üzerindeki siparişlerde kargo ücretsiz olacaktır.
               </p>
             </div>
           </CardContent>
-          <CardFooter>
-            <Button onClick={saveSettings} disabled={saving}>
+          <CardFooter className="bg-muted/30 rounded-b-lg">
+            <Button onClick={saveSettings} disabled={saving} className="transition-all hover:shadow-md">
               {saving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
