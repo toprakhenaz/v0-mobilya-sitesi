@@ -1,77 +1,45 @@
 import { createClient } from "@supabase/supabase-js"
 
+// Check if environment variables are available
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+
+// Validate environment variables
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn(
+    "Supabase URL veya Anon Key bulunamadı. Lütfen .env.local dosyasını kontrol edin veya çevre değişkenlerini ayarlayın.",
+  )
+}
+
 let supabaseClient: ReturnType<typeof createClient> | null = null
 
+// Export the getSupabaseClient function for backward compatibility
 export function getSupabaseClient() {
   if (!supabaseClient) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.error("Supabase URL and Anon Key must be provided")
-      throw new Error("Supabase URL and Anon Key must be provided")
+      console.error("Supabase URL ve Anon Key sağlanmalıdır")
+      throw new Error("Supabase URL ve Anon Key sağlanmalıdır")
     }
 
     try {
-      supabaseClient = createClient(supabaseUrl, supabaseAnonKey)
+      supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: true,
+        },
+      })
+      console.log("Supabase client başarıyla oluşturuldu")
     } catch (error) {
-      console.error("Error initializing Supabase client:", error)
+      console.error("Supabase client oluşturulurken hata:", error)
       throw error
     }
   }
   return supabaseClient
 }
 
-let supabase: ReturnType<typeof createClient>
+// Create and export the Supabase client directly
+export const supabase = getSupabaseClient()
 
-// Initialize supabase client
-try {
-  supabase = getSupabaseClient()
-} catch (error) {
-  console.error("Failed to initialize Supabase client:", error)
-  // Provide a fallback client that will log errors but not crash the app
-  supabase = {
-    from: () => ({
-      select: () => ({
-        order: () => ({
-          limit: () => ({
-            range: () => Promise.resolve({ data: [], error: null, count: 0 }),
-            then: () => Promise.resolve({ data: [], error: null, count: 0 }),
-          }),
-          range: () => Promise.resolve({ data: [], error: null, count: 0 }),
-          then: () => Promise.resolve({ data: [], error: null, count: 0 }),
-        }),
-        limit: () => Promise.resolve({ data: [], error: null }),
-        single: () => Promise.resolve({ data: null, error: null }),
-        eq: () => ({
-          single: () => Promise.resolve({ data: null, error: null }),
-          limit: () => Promise.resolve({ data: [], error: null }),
-          then: () => Promise.resolve({ data: [], error: null }),
-        }),
-        neq: () => ({
-          limit: () => Promise.resolve({ data: [], error: null }),
-        }),
-        gt: () => ({
-          order: () => ({
-            limit: () => Promise.resolve({ data: [], error: null }),
-          }),
-        }),
-        not: () => ({
-          gt: () => ({
-            order: () => ({
-              limit: () => Promise.resolve({ data: [], error: null }),
-            }),
-          }),
-        }),
-        or: () => ({
-          range: () => Promise.resolve({ data: [], error: null, count: 0 }),
-        }),
-      }),
-      update: () => ({
-        eq: () => Promise.resolve({ error: null }),
-      }),
-    }),
-  } as any
+// Export a function to check if Supabase is properly configured
+export function isSupabaseConfigured(): boolean {
+  return !!supabaseUrl && !!supabaseAnonKey
 }
-
-export { supabase }

@@ -2,8 +2,14 @@ import { createClient as createClientBase } from "@supabase/supabase-js"
 
 // createClient fonksiyonunu güncelleyelim
 export function createClient() {
+  // Önce .env.local'den, yoksa normal çevre değişkenlerinden al
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.error("Supabase URL ve Service Role Key sağlanmalıdır")
+    throw new Error("Supabase URL ve Service Role Key sağlanmalıdır")
+  }
 
   return createClientBase(supabaseUrl, supabaseKey, {
     auth: {

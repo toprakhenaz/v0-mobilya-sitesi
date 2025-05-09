@@ -309,21 +309,42 @@ export async function updateOrderStatus(orderId: number, status: string): Promis
   }
 }
 
-// Get site settings
+// Get site settings with fallback values
 export async function getSiteSettings(): Promise<any[]> {
   try {
+    // Check if Supabase URL is available
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+      console.warn("Supabase URL veya Anon Key bulunamadı, varsayılan ayarlar kullanılıyor")
+      return getDefaultSettings()
+    }
+
     const { data, error } = await supabase.from("site_settings").select("*")
 
     if (error) {
       console.error("Site ayarları alınırken hata:", error.message)
-      throw new Error(error.message)
+      return getDefaultSettings()
     }
 
-    return data || []
+    return data && data.length > 0 ? data : getDefaultSettings()
   } catch (error) {
     console.error("Site ayarları alınırken hata:", error)
-    return []
+    return getDefaultSettings()
   }
+}
+
+// Default settings as fallback
+function getDefaultSettings() {
+  return [
+    { key: "site_name", value: "Mobilya Sitesi" },
+    { key: "site_description", value: "Kaliteli mobilya ürünleri" },
+    { key: "contact_email", value: "info@mobilyasitesi.com" },
+    { key: "contact_phone", value: "+90 555 123 4567" },
+    { key: "address", value: "İstanbul, Türkiye" },
+    { key: "shipping_fee", value: "50" },
+    { key: "free_shipping_threshold", value: "1000" },
+    { key: "whatsapp_number", value: "+90 555 123 4567" },
+    { key: "whatsapp_message", value: "Merhaba, ürünleriniz hakkında bilgi almak istiyorum." },
+  ]
 }
 
 // Update multiple settings

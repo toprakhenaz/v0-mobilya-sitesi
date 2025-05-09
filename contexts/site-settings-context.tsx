@@ -9,31 +9,49 @@ type SiteSettingsContextType = {
   settings: Record<string, string>
   getSetting: (key: string) => string
   isLoading: boolean
+  error: string | null
+}
+
+const defaultSettings: Record<string, string> = {
+  site_name: "Mobilya Sitesi",
+  site_description: "Kaliteli mobilya ürünleri",
+  contact_email: "info@mobilyasitesi.com",
+  contact_phone: "+90 555 123 4567",
+  address: "İstanbul, Türkiye",
+  shipping_fee: "50",
+  free_shipping_threshold: "1000",
+  whatsapp_number: "+90 555 123 4567",
+  whatsapp_message: "Merhaba, ürünleriniz hakkında bilgi almak istiyorum.",
 }
 
 const SiteSettingsContext = createContext<SiteSettingsContextType>({
-  settings: {},
+  settings: defaultSettings,
   getSetting: () => "",
   isLoading: true,
+  error: null,
 })
 
 export function SiteSettingsProvider({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useState<Record<string, string>>({})
+  const [settings, setSettings] = useState<Record<string, string>>(defaultSettings)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchSettings() {
       try {
         const data = await getSiteSettings()
-        const settingsObj: Record<string, string> = {}
+        const settingsObj: Record<string, string> = { ...defaultSettings }
 
         data.forEach((setting) => {
           settingsObj[setting.key] = setting.value
         })
 
         setSettings(settingsObj)
+        setError(null)
       } catch (error) {
         console.error("Site ayarları alınırken hata:", error)
+        setError("Site ayarları yüklenirken bir hata oluştu. Varsayılan ayarlar kullanılıyor.")
+        // Keep using default settings
       } finally {
         setIsLoading(false)
       }
@@ -73,11 +91,16 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
       }
     }
 
+    // Varsayılan değerleri kontrol et
+    if (defaultSettings[key]) return defaultSettings[key]
+
     return ""
   }
 
   return (
-    <SiteSettingsContext.Provider value={{ settings, getSetting, isLoading }}>{children}</SiteSettingsContext.Provider>
+    <SiteSettingsContext.Provider value={{ settings, getSetting, isLoading, error }}>
+      {children}
+    </SiteSettingsContext.Provider>
   )
 }
 
