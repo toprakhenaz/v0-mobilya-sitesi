@@ -23,24 +23,60 @@ const categoryImages: Record<string, string> = {
   "ozel-tasarim": "/custom-furniture-design.png",
 }
 
+// Fallback categories in case Supabase is not available
+const fallbackCategories = [
+  {
+    id: 1,
+    name: "Bahçe Oturma Grupları",
+    slug: "bahce-oturma-gruplari",
+    image_url: "/categories/bahce-oturma-gruplari.jpg",
+  },
+  {
+    id: 2,
+    name: "Bahçe Köşe Takımları",
+    slug: "bahce-kose-takimlari",
+    image_url: "/categories/bahce-kose-takimlari.jpg",
+  },
+  {
+    id: 3,
+    name: "Masa Takımları",
+    slug: "masa-takimlari",
+    image_url: "/categories/masa-takimlari.jpg",
+  },
+  {
+    id: 4,
+    name: "Şezlonglar",
+    slug: "sezlonglar",
+    image_url: "/categories/sezlonglar.jpg",
+  },
+  {
+    id: 5,
+    name: "Sandalyeler",
+    slug: "sandalyeler",
+    image_url: "/categories/sandalyeler.png",
+  },
+]
+
 export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [saleProducts, setSaleProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true)
+        setError(null)
 
-        // Fetch categories first since that's where the error is occurring
+        // Fetch categories
         let categoriesData = []
         try {
           categoriesData = await getCategories()
         } catch (error) {
           console.error("Error fetching categories:", error)
-          categoriesData = [] // Use empty array if categories fetch fails
+          categoriesData = fallbackCategories // Use fallback categories if fetch fails
         }
 
         // Add image URLs to categories if they don't have one
@@ -58,30 +94,28 @@ export default function Home() {
 
         setCategories(categoriesWithImages)
 
-        // Continue with other data fetches
+        // Fetch featured products (newest products)
         try {
-          // Fetch featured products (newest products)
           const featured = await getFeaturedProducts(4)
           setFeaturedProducts(featured)
         } catch (error) {
           console.error("Error fetching featured products:", error)
+          // Use empty array if fetch fails
           setFeaturedProducts([])
         }
 
+        // Fetch sale products
         try {
-          // Fetch sale products
           const sale = await getSaleProducts(4)
           setSaleProducts(sale)
         } catch (error) {
           console.error("Error fetching sale products:", error)
+          // Use empty array if fetch fails
           setSaleProducts([])
         }
       } catch (error) {
         console.error("Error in fetchData:", error)
-        // Set default empty values for all state
-        setCategories([])
-        setFeaturedProducts([])
-        setSaleProducts([])
+        setError("Veri yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.")
       } finally {
         setIsLoading(false)
       }
@@ -94,6 +128,15 @@ export default function Home() {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-[60vh]">
+        <p className="text-red-500 mb-4">{error}</p>
+        <Button onClick={() => window.location.reload()}>Yeniden Dene</Button>
       </div>
     )
   }
@@ -147,9 +190,11 @@ export default function Home() {
             </Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {saleProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+            {saleProducts.length > 0 ? (
+              saleProducts.map((product) => <ProductCard key={product.id} product={product} />)
+            ) : (
+              <p className="col-span-full text-center py-8">Kampanyalı ürün bulunamadı.</p>
+            )}
           </div>
         </div>
       </section>
@@ -159,9 +204,11 @@ export default function Home() {
         <div className="container-custom">
           <h2 className="text-2xl font-bold mb-6">Öne Çıkan Ürünler</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+            {featuredProducts.length > 0 ? (
+              featuredProducts.map((product) => <ProductCard key={product.id} product={product} />)
+            ) : (
+              <p className="col-span-full text-center py-8">Öne çıkan ürün bulunamadı.</p>
+            )}
           </div>
           <div className="text-center mt-8">
             <Link href="/urunler">

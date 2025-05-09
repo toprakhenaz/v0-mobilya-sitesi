@@ -12,6 +12,7 @@ type SiteSettingsContextType = {
   error: string | null
 }
 
+// Varsayılan ayarlar
 const defaultSettings: Record<string, string> = {
   site_name: "Mobilya Sitesi",
   site_description: "Kaliteli mobilya ürünleri",
@@ -22,6 +23,15 @@ const defaultSettings: Record<string, string> = {
   free_shipping_threshold: "1000",
   whatsapp_number: "+90 555 123 4567",
   whatsapp_message: "Merhaba, ürünleriniz hakkında bilgi almak istiyorum.",
+  kargo_ucreti: "50",
+  ucretsiz_kargo_esigi: "1000",
+  kisa_bilgi: "Kaliteli mobilya ürünleri",
+  telefon_numarasi: "+90 555 123 4567",
+  adres: "İstanbul, Türkiye",
+  banka_adi: "Ziraat Bankası",
+  hesap_sahibi: "Mobilya Sitesi",
+  whatsapp_numarasi: "+90 555 123 4567",
+  varsayilan_mesaj: "Merhaba, ürünleriniz hakkında bilgi almak istiyorum.",
 }
 
 const SiteSettingsContext = createContext<SiteSettingsContextType>({
@@ -39,19 +49,28 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     async function fetchSettings() {
       try {
+        console.log("Site ayarları alınıyor...")
         const data = await getSiteSettings()
+        console.log("Alınan site ayarları:", data)
+
         const settingsObj: Record<string, string> = { ...defaultSettings }
 
-        data.forEach((setting) => {
-          settingsObj[setting.key] = setting.value
-        })
+        if (data && Array.isArray(data)) {
+          data.forEach((setting) => {
+            if (setting && setting.key && setting.value) {
+              settingsObj[setting.key] = setting.value
+            }
+          })
+        } else {
+          console.warn("Alınan site ayarları geçerli bir dizi değil, varsayılan ayarlar kullanılıyor")
+        }
 
         setSettings(settingsObj)
         setError(null)
       } catch (error) {
         console.error("Site ayarları alınırken hata:", error)
         setError("Site ayarları yüklenirken bir hata oluştu. Varsayılan ayarlar kullanılıyor.")
-        // Keep using default settings
+        // Varsayılan ayarları kullanmaya devam et
       } finally {
         setIsLoading(false)
       }
