@@ -11,24 +11,19 @@ const nextConfig = {
     domains: ['localhost', 'v0.blob.com', 'placeholder.com'],
     unoptimized: true,
   },
+  // Prisma'yı tamamen devre dışı bırak
   webpack: (config, { isServer }) => {
     if (!isServer) {
-      // Tarayıcı tarafında Prisma kullanımını engelle
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        path: false,
-        os: false,
-        crypto: false,
+      // Tarayıcı tarafında Prisma ve SQLite kullanımını engelle
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '@prisma/client': false,
+        'prisma': false,
+        'sqlite3': false,
+        'better-sqlite3': false,
       };
     }
     return config;
-  },
-  experimental: {
-    serverComponentsExternalPackages: ['@prisma/client', 'bcryptjs'],
-    serverActions: {
-      bodySizeLimit: '2mb',
-    },
   },
 }
 

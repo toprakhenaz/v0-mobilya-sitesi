@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server"
-import prisma from "@/lib/prisma"
+import { openDb } from "@/lib/db"
 
 export async function GET() {
   try {
-    const categories = await prisma.category.findMany({
-      orderBy: {
-        name: "asc",
-      },
-    })
+    const db = await openDb()
+    const categories = await db.all("SELECT * FROM categories ORDER BY name ASC")
 
     return NextResponse.json(categories)
   } catch (error) {

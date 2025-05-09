@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import prisma from "@/lib/prisma"
+import { openDb } from "@/lib/db"
 
 export async function GET(request: Request) {
   try {
@@ -7,29 +7,45 @@ export async function GET(request: Request) {
     const categorySlug = searchParams.get("category")
     const limit = searchParams.get("limit") ? Number.parseInt(searchParams.get("limit")!) : undefined
 
-    let products
+    const db = await openDb()
+    let products = []
 
     if (categorySlug) {
-      products = await prisma.product.findMany({
-        where: {
-          category: {
-            slug: categorySlug,
-          },
-        },
-        include: {
-          category: true,
-          product_images: true,
-        },
-        take: limit,
-      })
+      // Belirli bir kategorideki ürünleri getir
+      products = await db.all(
+        `
+        SELECT p.*, c.name as category_name, c.slug as category_slug
+        FROM products p
+        JOIN categories c ON p.category_id = c.id
+        WHERE c.slug = ?
+        LIMIT ?
+      `,
+        [categorySlug, limit || 100],
+      )
     } else {
-      products = await prisma.product.findMany({
-        include: {
-          category: true,
-          product_images: true,
-        },
-        take: limit,
-      })
+      // Tüm ürünleri getir
+      products = await db.all(
+        `
+        SELECT p.*, c.name as category_name, c.slug as category_slug
+        FROM products p
+        JOIN categories c ON p.category_id = c.id
+        LIMIT ?
+      `,
+        [limit || 100],
+      )
+    }
+
+    // Her ürün için görselleri getir
+    for (const product of products) {
+      const images = await db.all(
+        `
+        SELECT * FROM product_images
+        WHERE product_id = ?
+      `,
+        [product.id],
+      )
+
+      product.product_images = images
     }
 
     return NextResponse.json(products)
