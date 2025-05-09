@@ -1,12 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { join } from "path"
 import { writeFile, mkdir } from "fs/promises"
-import { addProductImage } from "@/lib/admin-service"
+import { addProductImage, getProduct } from "@/lib/admin-service"
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
-    const file = formData.get("file") as File
+    const file = formData.get("image") as File // "image" olarak değiştirildi
     const productId = Number(formData.get("productId"))
     const isPrimary = formData.get("isPrimary") === "true"
 
@@ -18,20 +18,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Geçersiz ürün ID" }, { status: 400 })
     }
 
+    // Ürün bilgilerini al (slug için)
+    const product = await getProduct(productId)
+    if (!product) {
+      return NextResponse.json({ error: "Ürün bulunamadı" }, { status: 404 })
+    }
+
     // Dosya içeriğini al
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // Dosya adını oluştur (benzersiz olması için timestamp ekle)
+    // Dosya adını ürün slug'ı ile oluştur
     const originalFilename = file.name
     const fileExtension = originalFilename.split(".").pop()
     const timestamp = Date.now()
-    const filename = `product_${productId}_${timestamp}.${fileExtension}`
+    const filename = `${product.slug}-${timestamp}.${fileExtension}`
 
-    // Dosya yolunu oluştur
-    const uploadDir = join(process.cwd(), "public", "uploads", "products")
+    // Dosya yolunu oluştur - public/products olarak değiştirildi
+    const uploadDir = join(process.cwd(), "public", "products")
     const filePath = join(uploadDir, filename)
-    const publicPath = `/uploads/products/${filename}`
+    const publicPath = `/products/${filename}`
 
     // Klasörü oluştur (yoksa)
     try {

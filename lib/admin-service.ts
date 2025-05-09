@@ -78,11 +78,12 @@ export type Product = {
   is_on_sale?: boolean
   stock: number
   category_id: number
-  images: string[] // Client-side representation of images
+  images?: string[] // Client-side representation of images
   image_urls?: string[] // Database column for image URLs
   features?: string[]
   specifications?: Record<string, string>
   created_at: string
+  category?: Category
 }
 
 // Admin login function
@@ -181,22 +182,12 @@ export async function deleteCategory(id: number): Promise<void> {
 
 // Get all products with optional filtering
 export async function getProducts(
-  categoryId?: number,
-  filters?: {
-    minPrice?: number
-    maxPrice?: number
-    sortBy?: "price_asc" | "price_desc" | "newest" | "popular"
-  },
   page = 1,
   itemsPerPage = 10,
   searchTerm = "",
 ): Promise<{ products: Product[]; totalCount: number }> {
   try {
     let query = supabase.from("products").select(`*, category:categories(name)`, { count: "exact" })
-
-    if (categoryId) {
-      query = query.eq("category_id", categoryId)
-    }
 
     if (searchTerm) {
       query = query.ilike("name", `%${searchTerm}%`)
@@ -212,7 +203,33 @@ export async function getProducts(
       throw new Error(error.message)
     }
 
-    return { products: data as Product[], totalCount: count || 0 }
+    // Ürünlerin resimlerini al
+    const productsWithImages = await Promise.all(
+      data?.map(async (product) => {
+        // Önce ürünün image_urls alanını kontrol et
+        if (product.image_urls && product.image_urls.length > 0) {
+          return { ...product, images: product.image_urls }
+        }
+
+        // Eğer image_urls yoksa, product_images tablosundan resimleri al
+        const { data: imageData } = await supabase
+          .from("product_images")
+          .select("url")
+          .eq("product_id", product.id)
+          .order("is_primary", { ascending: false })
+
+        const images = imageData && imageData.length > 0 ? imageData.map((img) => img.url) : []
+
+        // Ürünün image_urls alanını güncelle
+        if (images.length > 0) {
+          await supabase.from("products").update({ image_urls: images }).eq("id", product.id)
+        }
+
+        return { ...product, images }
+      }) || [],
+    )
+
+    return { products: productsWithImages, totalCount: count || 0 }
   } catch (error) {
     console.error("Ürünler alınırken hata:", error)
     return { products: [], totalCount: 0 }
@@ -235,7 +252,17 @@ export async function getProduct(id: number): Promise<Product | null> {
       return null
     }
 
-    return data as Product
+    // Ürünün resimlerini al
+    const { data: imageData } = await supabase
+      .from("product_images")
+      .select("*")
+      .eq("product_id", id)
+      .order("is_primary", { ascending: false })
+
+    const images = imageData || []
+    const imageUrls = images.map((img) => img.url)
+
+    return { ...data, images: imageUrls }
   } catch (error) {
     console.error(`Ürün (ID: ${id}) alınırken hata:`, error)
     return null
@@ -279,6 +306,10 @@ export async function updateProduct(id: number, product: Partial<Product>): Prom
 // Delete a product
 export async function deleteProduct(id: number): Promise<void> {
   try {
+    // Önce ürüne ait resimleri sil
+    await supabase.from("product_images").delete().eq("product_id", id)
+
+    // Sonra ürünü sil
     const { error } = await supabase.from("products").delete().eq("id", id)
 
     if (error) {
@@ -525,11 +556,29 @@ export async function updateOrderStatus(orderId: number, status: string): Promis
 // Delete a product image
 export async function deleteProductImage(imageId: number): Promise<void> {
   try {
+    // Önce resim bilgilerini al
+    const { data: imageData, error: fetchError } = await supabase
+      .from("product_images")
+      .select("product_id, url")
+      .eq("id", imageId)
+      .single()
+
+    if (fetchError) {
+      console.error(`Resim bilgileri (ID: ${imageId}) alınırken hata:`, fetchError.message)
+      throw new Error(fetchError.message)
+    }
+
+    // Resmi veritabanından sil
     const { error } = await supabase.from("product_images").delete().eq("id", imageId)
 
     if (error) {
       console.error(`Resim (ID: ${imageId}) silinirken hata:`, error.message)
       throw new Error(error.message)
+    }
+
+    // Ürünün image_urls alanını güncelle
+    if (imageData && imageData.product_id) {
+      await updateProductImageUrls(imageData.product_id)
     }
   } catch (error) {
     console.error(`Resim (ID: ${imageId}) silinirken hata:`, error)
@@ -579,6 +628,9 @@ export async function setPrimaryImage(imageId: number, productId: number): Promi
       console.error(`Ana resim (ID: ${imageId}) ayarlanırken hata:`, error.message)
       throw new Error(error.message)
     }
+
+    // Ürünün image_urls alanını güncelle
+    await updateProductImageUrls(productId)
 
     return true
   } catch (error) {
