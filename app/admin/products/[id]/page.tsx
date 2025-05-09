@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
@@ -29,6 +28,7 @@ import type { Category, Product, ProductImage } from "@/lib/admin-service"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function EditProductPage({ params }: { params: { id: string } }) {
+  // Doğrudan params.id kullan, use() fonksiyonunu kullanma
   const isNewProduct = params.id === "new"
   const productId = isNewProduct ? 0 : Number.parseInt(params.id, 10)
 
@@ -266,7 +266,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
       // Eğer yeni resimler varsa, yükle
       if (productImages.length > 0) {
-        await uploadProductImages(savedProductId)
+        await uploadProductImages(savedProductId, slug)
       }
 
       // Yeni ürün oluşturulduysa, düzenleme sayfasına yönlendir
@@ -285,13 +285,14 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     }
   }
 
-  const uploadProductImages = async (productId: number): Promise<void> => {
+  const uploadProductImages = async (productId: number, productSlug: string): Promise<void> => {
     setUploadError(null)
 
     try {
       // Tüm resimleri içeren bir FormData oluştur
       const formData = new FormData()
       formData.append("productId", productId.toString())
+      formData.append("productSlug", productSlug)
 
       // İlk resmi primary olarak işaretle
       if (productImages.length > 0) {
@@ -303,17 +304,21 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         formData.append(`images`, file)
       })
 
+      console.log("Formdata oluşturuldu, resim sayısı:", productImages.length)
+
       // Resimleri yükle
       const response = await fetch("/api/admin/upload-product-images", {
         method: "POST",
         body: formData,
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
-        throw new Error(data.error || "Resimler yüklenirken bir hata oluştu")
+        const errorText = await response.text()
+        console.error("API yanıt hatası:", response.status, errorText)
+        throw new Error(`Resim yükleme hatası: ${response.status} ${errorText}`)
       }
+
+      const data = await response.json()
 
       // Başarılı olursa, resim önizlemelerini temizle
       setProductImages([])
@@ -856,7 +861,10 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                       ))}
                     </div>
                     <div className="mt-4">
-                      <Button onClick={() => uploadProductImages(productId)} disabled={productImages.length === 0}>
+                      <Button
+                        onClick={() => uploadProductImages(productId, slug)}
+                        disabled={productImages.length === 0}
+                      >
                         <Upload className="mr-2 h-4 w-4" />
                         Resimleri Yükle
                       </Button>
