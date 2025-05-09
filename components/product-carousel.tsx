@@ -1,59 +1,146 @@
 "use client"
 
-import { useState } from "react"
-import Image from "next/image"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import ProductCard from "./product-card"
 
-interface ProductCarouselProps {
-  images: string[]
-  productName: string
+type ProductCarouselProps = {
+  type: "new" | "sale" | "category"
+  categorySlug?: string
+  limit?: number
 }
 
-const ProductCarousel = ({ images, productName }: ProductCarouselProps) => {
-  const [currentSlide, setCurrentSlide] = useState(0)
+type Product = {
+  id: number
+  name: string
+  slug: string
+  price: number
+  original_price: number | null
+  discount_percentage: number | null
+  is_new: boolean
+  is_on_sale: boolean
+  product_images: Array<{ url: string; is_primary: boolean }>
+}
 
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev === images.length - 1 ? 0 : prev + 1))
+export default function ProductCarousel({ type, categorySlug, limit = 8 }: ProductCarouselProps) {
+  const [products, setProducts] = useState<Product[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setIsLoading(true)
+        let url = `/api/products?limit=${limit}`
+
+        if (categorySlug) {
+          url += `&category=${categorySlug}`
+        }
+
+        const response = await fetch(url)
+
+        if (!response.ok) {
+          throw new Error("Ürünler yüklenirken bir hata oluştu")
+        }
+
+        let data = await response.json()
+
+        // Filtrele
+        if (type === "new") {
+          data = data.filter((product: Product) => product.is_new)
+        } else if (type === "sale") {
+          data = data.filter((product: Product) => product.is_on_sale)
+        }
+
+        setProducts(data)
+        setError(null)
+      } catch (err) {
+        console.error("Ürünler yüklenirken hata:", err)
+        setError("Ürünler yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchProducts()
+  }, [type, categorySlug, limit])
+
+  if (isLoading) {
+    return <div className="h-[300px] flex items-center justify-center">Ürünler yükleniyor...</div>
   }
 
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev === 0 ? images.length - 1 : prev - 1))
+  if (error) {
+    return (
+      <div className="py-12 px-4 text-center">
+        <p className="text-red-500 mb-4">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+        >
+          Yeniden Dene
+        </button>
+      </div>
+    )
+  }
+
+  if (products.length === 0) {
+    return (
+      <div className="py-12 px-4 text-center">
+        <p className="text-gray-500">Bu kategoride ürün bulunamadı.</p>
+      </div>
+    )
   }
 
   return (
-    <div className="relative w-full h-80">
-      {images.map((image, index) => (
-        <div
-          key={index}
-          className={`absolute top-0 left-0 w-full h-full transition-opacity duration-300 ${
-            index === currentSlide ? "opacity-100" : "opacity-0 pointer-events-none"
-          }`}
-        >
-          <Image
-            src={image || "/placeholder.svg"}
-            alt={`${productName} - Görsel ${index + 1}`}
-            fill
-            className="object-contain"
+    <div className="relative">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {products.map((product) => (
+          <ProductCard
+            key={product.id}
+            name={product.name}
+            slug={product.slug}
+            price={product.price}
+            originalPrice={product.original_price}
+            discountPercentage={product.discount_percentage}
+            isNew={product.is_new}
+            isOnSale={product.is_on_sale}
+            imageUrl={product.product_images?.find((img) => img.is_primary)?.url || "/diverse-products-still-life.png"}
           />
-        </div>
-      ))}
+        ))}
+      </div>
 
-      <button
-        onClick={prevSlide}
-        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 rounded-full p-2 shadow-md z-10"
-        aria-label="Önceki görsel"
-      >
-        <ChevronLeft className="h-5 w-5" />
-      </button>
-      <button
-        onClick={nextSlide}
-        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 rounded-full p-2 shadow-md z-10"
-        aria-label="Sonraki görsel"
-      >
-        <ChevronRight className="h-5 w-5" />
-      </button>
+      {type === "new" && (
+        <div className="text-center mt-8">
+          <Link
+            href="/yeni-urunler"
+            className="inline-block px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+          >
+            Tüm Yeni Ürünler
+          </Link>
+        </div>
+      )}
+
+      {type === "sale" && (
+        <div className="text-center mt-8">
+          <Link
+            href="/kampanyali-urunler"
+            className="inline-block px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+          >
+            Tüm Kampanyalı Ürünler
+          </Link>
+        </div>
+      )}
+
+      {type === "category" && categorySlug && (
+        <div className="text-center mt-8">
+          <Link
+            href={`/kategori/${categorySlug}`}
+            className="inline-block px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+          >
+            Tüm Ürünleri Gör
+          </Link>
+        </div>
+      )}
     </div>
   )
 }
-
-export default ProductCarousel
