@@ -50,8 +50,8 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   const [isDeleting, setIsDeleting] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [activeTab, setActiveTab] = useState("general")
-  const [tempImages, setTempImages] = useState<File[]>([])
-  const [tempImagePreviews, setTempImagePreviews] = useState<string[]>([])
+  const [productImages, setProductImages] = useState<File[]>([])
+  const [productImagePreviews, setProductImagePreviews] = useState<string[]>([])
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   // Add refs to track manual changes
@@ -100,7 +100,17 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         setIsNew(productData.is_new || false)
         setStock(productData.stock.toString())
         setCategoryId(productData.category_id.toString())
-        setImages(productData.images || [])
+
+        // Ürün resimlerini ayarla
+        if (productData.images && Array.isArray(productData.images)) {
+          const productImages = productData.images.map((url, index) => ({
+            id: index,
+            product_id: productId,
+            url,
+            is_primary: index === 0,
+          }))
+          setImages(productImages)
+        }
       } catch (error) {
         console.error("Veriler alınırken hata:", error)
         toast({
@@ -174,16 +184,16 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     setDiscountPercentage(e.target.value)
   }
 
-  const handleTempImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProductImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
 
     const newFiles = Array.from(files)
-    setTempImages((prev) => [...prev, ...newFiles])
+    setProductImages((prev) => [...prev, ...newFiles])
 
     // Create preview URLs
     const newPreviews = newFiles.map((file) => URL.createObjectURL(file))
-    setTempImagePreviews((prev) => [...prev, ...newPreviews])
+    setProductImagePreviews((prev) => [...prev, ...newPreviews])
 
     // Reset file input
     if (fileInputRef.current) {
@@ -191,60 +201,12 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     }
   }
 
-  const handleRemoveTempImage = (index: number) => {
+  const handleRemoveProductImage = (index: number) => {
     // Revoke object URL to avoid memory leaks
-    URL.revokeObjectURL(tempImagePreviews[index])
+    URL.revokeObjectURL(productImagePreviews[index])
 
-    setTempImages((prev) => prev.filter((_, i) => i !== index))
-    setTempImagePreviews((prev) => prev.filter((_, i) => i !== index))
-  }
-
-  // uploadProductImages fonksiyonunu güncelle
-  const uploadProductImages = async (productId: number, files: File[]): Promise<boolean> => {
-    setUploadError(null)
-    try {
-      // İlk resmi primary olarak işaretle
-      let isFirstImage = true
-
-      for (const file of files) {
-        const formData = new FormData()
-        formData.append("productId", productId.toString())
-        formData.append("image", file)
-
-        // İlk resmi primary olarak işaretle
-        if (isFirstImage) {
-          formData.append("isPrimary", "true")
-          isFirstImage = false
-        }
-
-        const response = await fetch("/api/admin/upload-product-image", {
-          method: "POST",
-          body: formData,
-        })
-
-        const data = await response.json()
-
-        if (!response.ok) {
-          console.error("Image upload failed:", data)
-          throw new Error(data.error || "Resim yüklenirken bir hata oluştu")
-        }
-
-        // If this was successful, add the image to the images state
-        if (data.success && data.image) {
-          setImages((prevImages) => [...prevImages, data.image])
-        }
-
-        // If there's a note, it means we used the fallback method
-        if (data.note) {
-          console.warn("Image upload note:", data.note)
-        }
-      }
-      return true
-    } catch (error) {
-      console.error("Resimler yüklenirken hata:", error)
-      setUploadError(error instanceof Error ? error.message : "Resim yüklenirken bir hata oluştu")
-      return false
-    }
+    setProductImages((prev) => prev.filter((_, i) => i !== index))
+    setProductImagePreviews((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -274,48 +236,42 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         category_id: Number.parseInt(categoryId, 10),
       }
 
+      let savedProductId: number
+
       if (isNewProduct) {
         // Yeni ürün oluştur
         const newProduct = await createProduct(productData)
-        if (newProduct) {
-          // Eğer geçici resimler varsa, yükle
-          if (tempImages.length > 0) {
-            const uploadSuccess = await uploadProductImages(newProduct.id, tempImages)
-            if (!uploadSuccess) {
-              toast({
-                variant: "destructive",
-                title: "Uyarı",
-                description: "Ürün oluşturuldu ancak bazı resimler yüklenemedi.",
-              })
-            }
-          }
-
-          toast({
-            title: "Başarılı",
-            description: "Ürün başarıyla oluşturuldu.",
-          })
-          router.push(`/admin/products/${newProduct.id}`)
+        if (!newProduct) {
+          throw new Error("Ürün oluşturulamadı")
         }
+        savedProductId = newProduct.id
+
+        toast({
+          title: "Başarılı",
+          description: "Ürün başarıyla oluşturuldu.",
+        })
       } else {
         // Mevcut ürünü güncelle
-        await updateProduct(productId, productData)
-
-        // If there are temporary images, upload them
-        if (tempImages.length > 0) {
-          const uploadSuccess = await uploadProductImages(productId, tempImages)
-          if (!uploadSuccess) {
-            toast({
-              variant: "destructive",
-              title: "Uyarı",
-              description: "Ürün güncellendi ancak bazı resimler yüklenemedi.",
-            })
-          }
+        const updatedProduct = await updateProduct(productId, productData)
+        if (!updatedProduct) {
+          throw new Error("Ürün güncellenemedi")
         }
+        savedProductId = productId
 
         toast({
           title: "Başarılı",
           description: "Ürün başarıyla güncellendi.",
         })
+      }
+
+      // Eğer yeni resimler varsa, yükle
+      if (productImages.length > 0) {
+        await uploadProductImages(savedProductId)
+      }
+
+      // Yeni ürün oluşturulduysa, düzenleme sayfasına yönlendir
+      if (isNewProduct) {
+        router.push(`/admin/products/${savedProductId}`)
       }
     } catch (error) {
       console.error(isNewProduct ? "Ürün oluşturulurken hata:" : "Ürün güncellenirken hata:", error)
@@ -326,6 +282,60 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       })
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const uploadProductImages = async (productId: number): Promise<void> => {
+    setUploadError(null)
+
+    try {
+      // Tüm resimleri içeren bir FormData oluştur
+      const formData = new FormData()
+      formData.append("productId", productId.toString())
+
+      // İlk resmi primary olarak işaretle
+      if (productImages.length > 0) {
+        formData.append("isPrimary", "true")
+      }
+
+      // Tüm resimleri ekle
+      productImages.forEach((file, index) => {
+        formData.append(`images`, file)
+      })
+
+      // Resimleri yükle
+      const response = await fetch("/api/admin/upload-product-images", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Resimler yüklenirken bir hata oluştu")
+      }
+
+      // Başarılı olursa, resim önizlemelerini temizle
+      setProductImages([])
+      setProductImagePreviews([])
+
+      // Yeni resimleri images state'ine ekle
+      if (data.images && data.images.length > 0) {
+        setImages((prev) => [...prev, ...data.images])
+      }
+
+      toast({
+        title: "Başarılı",
+        description: `${data.images.length} resim başarıyla yüklendi.`,
+      })
+    } catch (error) {
+      console.error("Resimler yüklenirken hata:", error)
+      setUploadError(error instanceof Error ? error.message : "Resim yüklenirken bir hata oluştu")
+      toast({
+        variant: "destructive",
+        title: "Hata",
+        description: "Resimler yüklenirken bir hata oluştu.",
+      })
     }
   }
 
@@ -348,65 +358,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         description: "Ürün silinirken bir hata oluştu.",
       })
       setIsDeleting(false)
-    }
-  }
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUploadError(null)
-
-    if (isNewProduct) {
-      handleTempImageUpload(e)
-      return
-    }
-
-    const files = e.target.files
-    if (!files || files.length === 0) return
-
-    const formData = new FormData()
-    formData.append("productId", productId.toString())
-    formData.append("image", files[0])
-
-    // Eğer hiç resim yoksa, bu resmi primary yap
-    if (images.length === 0) {
-      formData.append("isPrimary", "true")
-    }
-
-    try {
-      const response = await fetch("/api/admin/upload-product-image", {
-        method: "POST",
-        body: formData,
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Resim yüklenirken bir hata oluştu")
-      }
-
-      // Yeni resmi images listesine ekle
-      setImages([...images, data.image])
-
-      // If there's a note, it means we used the fallback method
-      if (data.note) {
-        console.warn("Image upload note:", data.note)
-        toast({
-          title: "Bilgi",
-          description: data.note,
-        })
-      } else {
-        toast({
-          title: "Başarılı",
-          description: "Resim başarıyla yüklendi.",
-        })
-      }
-    } catch (error) {
-      console.error("Resim yüklenirken hata:", error)
-      setUploadError(error instanceof Error ? error.message : "Resim yüklenirken bir hata oluştu")
-      toast({
-        variant: "destructive",
-        title: "Hata",
-        description: "Resim yüklenirken bir hata oluştu.",
-      })
     }
   }
 
@@ -653,6 +604,91 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Ürün Resimleri Bölümü */}
+                <div className="space-y-4 border-t pt-4 mt-4">
+                  <div>
+                    <h3 className="text-lg font-medium">Ürün Resimleri</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Ürün için resimler ekleyin. Ürün kaydedildiğinde resimler otomatik olarak yüklenecektir.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="product-image-upload">Resim Ekle</Label>
+                    <div className="flex items-center">
+                      <Input
+                        id="product-image-upload"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="w-auto"
+                        onChange={handleProductImageUpload}
+                        ref={fileInputRef}
+                      />
+                      <Button variant="outline" className="ml-2" onClick={() => fileInputRef.current?.click()}>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Seç
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Resim Önizlemeleri */}
+                  {productImagePreviews.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                      {productImagePreviews.map((preview, index) => (
+                        <div key={index} className="relative group">
+                          <div className="relative aspect-square rounded-md overflow-hidden border border-gray-200">
+                            <Image
+                              src={preview || "/placeholder.svg"}
+                              alt="Ürün resmi önizleme"
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleRemoveProductImage(index)}
+                            className="absolute top-2 right-2"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Mevcut Resimler */}
+                  {!isNewProduct && images.length > 0 && (
+                    <div className="mt-4">
+                      <h4 className="text-sm font-medium mb-2">Mevcut Resimler</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {images.map((image) => (
+                          <div key={image.id} className="relative group">
+                            <div
+                              className={`relative aspect-square rounded-md overflow-hidden border ${
+                                image.is_primary ? "border-primary border-2" : "border-gray-200"
+                              }`}
+                            >
+                              <Image
+                                src={image.url || "/placeholder.svg"}
+                                alt="Ürün resmi"
+                                fill
+                                className="object-cover"
+                              />
+                              {image.is_primary && (
+                                <div className="absolute top-2 right-2 bg-primary text-white text-xs px-2 py-1 rounded">
+                                  Ana Resim
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </CardContent>
               <CardFooter className="flex justify-end">
                 <Button type="submit" disabled={isSaving}>
@@ -702,8 +738,9 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                       id="image-upload"
                       type="file"
                       accept="image/*"
+                      multiple
                       className="w-auto"
-                      onChange={handleImageUpload}
+                      onChange={handleProductImageUpload}
                       ref={fileInputRef}
                     />
                     <Button variant="outline" className="ml-2" onClick={() => fileInputRef.current?.click()}>
@@ -713,16 +750,16 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                   </div>
                 </div>
 
+                {/* Yeni ürün için geçici resim önizlemeleri */}
                 {isNewProduct ? (
-                  // Yeni ürün için geçici resim önizlemeleri
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {tempImagePreviews.length === 0 ? (
+                    {productImagePreviews.length === 0 ? (
                       <div className="col-span-full text-center p-8 border border-dashed rounded-md">
                         <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
                         <p className="text-muted-foreground">Henüz resim eklenmedi</p>
                       </div>
                     ) : (
-                      tempImagePreviews.map((preview, index) => (
+                      productImagePreviews.map((preview, index) => (
                         <div key={index} className="relative group">
                           <div className="relative aspect-square rounded-md overflow-hidden border border-gray-200">
                             <Image
@@ -736,7 +773,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => handleRemoveTempImage(index)}
+                              onClick={() => handleRemoveProductImage(index)}
                               className="absolute top-2 right-2"
                             >
                               <X className="h-4 w-4" />
@@ -787,6 +824,43 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                         </div>
                       ))
                     )}
+                  </div>
+                )}
+
+                {/* Yeni eklenen resim önizlemeleri */}
+                {!isNewProduct && productImagePreviews.length > 0 && (
+                  <div className="mt-6">
+                    <h3 className="text-lg font-medium mb-4">Yeni Eklenecek Resimler</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {productImagePreviews.map((preview, index) => (
+                        <div key={index} className="relative group">
+                          <div className="relative aspect-square rounded-md overflow-hidden border border-gray-200">
+                            <Image
+                              src={preview || "/placeholder.svg"}
+                              alt="Ürün resmi önizleme"
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleRemoveProductImage(index)}
+                              className="absolute top-2 right-2"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4">
+                      <Button onClick={() => uploadProductImages(productId)} disabled={productImages.length === 0}>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Resimleri Yükle
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>

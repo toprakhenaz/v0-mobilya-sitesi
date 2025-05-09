@@ -8,12 +8,16 @@ interface ProductCardProps {
 
 const ProductCard = ({ product }: ProductCardProps) => {
   // Ürünün ilk resmini al
-  const productImage =
-    product.images && product.images.length > 0
-      ? product.images[0]
-      : product.image_urls && product.image_urls.length > 0
-        ? product.image_urls[0]
-        : "/placeholder.svg"
+  let productImage = "/placeholder.svg"
+
+  // Önce image_urls alanını kontrol et
+  if (product.image_urls && product.image_urls.length > 0) {
+    productImage = product.image_urls[0]
+  }
+  // Sonra images alanını kontrol et
+  else if (product.images && product.images.length > 0) {
+    productImage = product.images[0]
+  }
 
   // Ürünün indirimli fiyatını hesapla
   const discountedPrice = product.discount_percentage

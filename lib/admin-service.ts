@@ -1,5 +1,99 @@
 import { supabase } from "./supabase-client"
 
+// Define the ProductImage type
+export interface ProductImage {
+  id: number
+  product_id: number
+  url: string
+  is_primary: boolean
+  created_at?: string
+}
+
+// Update product image_urls field based on product_images table
+export async function updateProductImageUrls(productId: number): Promise<boolean> {
+  try {
+    console.log("updateProductImageUrls çağrıldı:", productId)
+
+    // Get all images for this product
+    const { data: images, error: fetchError } = await supabase
+      .from("product_images")
+      .select("url, is_primary")
+      .eq("product_id", productId)
+      .order("is_primary", { ascending: false })
+
+    if (fetchError) {
+      console.error(`Ürün resimleri (Ürün ID: ${productId}) alınırken hata:`, fetchError.message)
+      throw new Error(fetchError.message)
+    }
+
+    console.log("Bulunan resimler:", images)
+
+    // Extract URLs
+    const imageUrls = images.map((img) => img.url)
+
+    console.log("Güncellenecek image_urls:", imageUrls)
+
+    // Update the product
+    const { error: updateError } = await supabase.from("products").update({ image_urls: imageUrls }).eq("id", productId)
+
+    if (updateError) {
+      console.error(`Ürün (ID: ${productId}) resim URL'leri güncellenirken hata:`, updateError.message)
+      throw new Error(updateError.message)
+    }
+
+    return true
+  } catch (error) {
+    console.error(`Ürün (ID: ${productId}) resim URL'leri güncellenirken hata:`, error)
+    return false
+  }
+}
+
+// Add product image
+export async function addProductImage(productId: number, url: string, isPrimary = false): Promise<ProductImage | null> {
+  try {
+    console.log(`addProductImage çağrıldı: productId=${productId}, url=${url}, isPrimary=${isPrimary}`)
+
+    // If this is the primary image, reset other images first
+    if (isPrimary) {
+      console.log("Bu ana resim, diğer resimleri sıfırlıyorum")
+      const { error: resetError } = await supabase
+        .from("product_images")
+        .update({ is_primary: false })
+        .eq("product_id", productId)
+
+      if (resetError) {
+        console.error(`Ürün resimleri (Ürün ID: ${productId}) güncellenirken hata:`, resetError.message)
+        throw new Error(resetError.message)
+      }
+    }
+
+    // Add the new image
+    const { data, error } = await supabase
+      .from("product_images")
+      .insert([
+        {
+          product_id: productId,
+          url,
+          is_primary: isPrimary,
+        },
+      ])
+      .select()
+
+    if (error) {
+      console.error(`Ürün resmi eklenirken hata:`, error.message)
+      throw new Error(error.message)
+    }
+
+    console.log("Resim başarıyla eklendi:", data)
+
+    // Return the first image if available
+    return data && data.length > 0 ? (data[0] as ProductImage) : null
+  } catch (error) {
+    console.error(`Ürün resmi eklenirken hata:`, error)
+    return null
+  }
+}
+
 // Define AdminUser type
 export type AdminUser = {
   id: number
@@ -9,13 +103,6 @@ export type AdminUser = {
   last_login: string
   created_at: string
   updated_at: string
-}
-
-export type ProductImage = {
-  id: number
-  product_id: number
-  url: string
-  is_primary: boolean
 }
 
 export type HeroSlide = {
@@ -635,83 +722,6 @@ export async function setPrimaryImage(imageId: number, productId: number): Promi
     return true
   } catch (error) {
     console.error(`Ana resim (ID: ${imageId}) ayarlanırken hata:`, error)
-    return false
-  }
-}
-
-// Add product image
-export async function addProductImage(productId: number, url: string, isPrimary = false): Promise<ProductImage | null> {
-  try {
-    // If this is the primary image, reset other images first
-    if (isPrimary) {
-      const { error: resetError } = await supabase
-        .from("product_images")
-        .update({ is_primary: false })
-        .eq("product_id", productId)
-
-      if (resetError) {
-        console.error(`Ürün resimleri (Ürün ID: ${productId}) güncellenirken hata:`, resetError.message)
-        throw new Error(resetError.message)
-      }
-    }
-
-    // Add the new image
-    const { data, error } = await supabase
-      .from("product_images")
-      .insert([
-        {
-          product_id: productId,
-          url,
-          is_primary: isPrimary,
-        },
-      ])
-      .select()
-      .single()
-
-    if (error) {
-      console.error(`Ürün resmi eklenirken hata:`, error.message)
-      throw new Error(error.message)
-    }
-
-    // Update the product's image_urls array
-    await updateProductImageUrls(productId)
-
-    return data as ProductImage
-  } catch (error) {
-    console.error(`Ürün resmi eklenirken hata:`, error)
-    return null
-  }
-}
-
-// Update product image_urls field based on product_images table
-export async function updateProductImageUrls(productId: number): Promise<boolean> {
-  try {
-    // Get all images for this product
-    const { data: images, error: fetchError } = await supabase
-      .from("product_images")
-      .select("url, is_primary")
-      .eq("product_id", productId)
-      .order("is_primary", { ascending: false })
-
-    if (fetchError) {
-      console.error(`Ürün resimleri (Ürün ID: ${productId}) alınırken hata:`, fetchError.message)
-      throw new Error(fetchError.message)
-    }
-
-    // Extract URLs
-    const imageUrls = images.map((img) => img.url)
-
-    // Update the product
-    const { error: updateError } = await supabase.from("products").update({ image_urls: imageUrls }).eq("id", productId)
-
-    if (updateError) {
-      console.error(`Ürün (ID: ${productId}) resim URL'leri güncellenirken hata:`, updateError.message)
-      throw new Error(updateError.message)
-    }
-
-    return true
-  } catch (error) {
-    console.error(`Ürün (ID: ${productId}) resim URL'leri güncellenirken hata:`, error)
     return false
   }
 }
