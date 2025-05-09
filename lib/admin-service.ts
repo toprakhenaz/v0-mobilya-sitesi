@@ -1,5 +1,5 @@
 import { supabase } from "./supabase-client"
-import type { Product, Category } from "./supabase"
+import type { Product, Category, User } from "./supabase"
 
 // Define AdminUser type
 export type AdminUser = {
@@ -184,12 +184,6 @@ export async function getProducts(
 // Get a single product by ID
 export async function getProduct(id: number): Promise<Product | null> {
   try {
-    // Check if id is valid
-    if (isNaN(id) || id <= 0) {
-      console.error(`Geçersiz ürün ID: ${id}`)
-      return null
-    }
-
     const { data, error } = await supabase.from("products").select(`*, category:categories(name)`).eq("id", id).single()
 
     if (error) {
@@ -437,9 +431,11 @@ export async function getUsers(
   page = 1,
   itemsPerPage = 10,
   searchTerm = "",
-): Promise<{ users: any[]; totalCount: number }> {
+): Promise<{ users: User[]; totalCount: number }> {
   try {
-    let query = supabase.from("users").select("*", { count: "exact" })
+    let query = supabase
+      .from("users")
+      .select(`*, (SELECT count(*) FROM orders WHERE orders.user_id = users.id) as orders_count`, { count: "exact" })
 
     if (searchTerm) {
       query = query.ilike("email", `%${searchTerm}%`)
@@ -455,7 +451,7 @@ export async function getUsers(
       throw new Error(error.message)
     }
 
-    return { users: data || [], totalCount: count || 0 }
+    return { users: data as User[], totalCount: count || 0 }
   } catch (error) {
     console.error("Kullanıcılar alınırken hata:", error)
     return { users: [], totalCount: 0 }
@@ -466,18 +462,18 @@ export async function getUsers(
 export async function getOrders(
   page = 1,
   itemsPerPage = 10,
-  statusFilter?: string,
+  status?: string,
   searchTerm?: string,
-): Promise<{ orders: any[]; totalCount: number }> {
+): Promise<{ orders: Order[]; totalCount: number }> {
   try {
-    let query = supabase.from("orders").select("*", { count: "exact" })
+    let query = supabase.from("orders").select(`*, user:users(email)`, { count: "exact" })
 
-    if (statusFilter && statusFilter !== "all") {
-      query = query.eq("status", statusFilter)
+    if (status && status !== "all") {
+      query = query.eq("status", status)
     }
 
     if (searchTerm) {
-      query = query.ilike("id", `%${searchTerm}%`)
+      query = query.or(`id.like.%${searchTerm}%,shipping_address.like.%${searchTerm}%`)
     }
 
     const from = (page - 1) * itemsPerPage
@@ -490,7 +486,12 @@ export async function getOrders(
       throw new Error(error.message)
     }
 
-    return { orders: data || [], totalCount: count || 0 }
+    const ordersWithUserEmail = data?.map((order) => ({
+      ...order,
+      user_email: order.user?.email || order.guest_email || "Misafir Kullanıcı",
+    })) as Order[]
+
+    return { orders: ordersWithUserEmail || [], totalCount: count || 0 }
   } catch (error) {
     console.error("Siparişler alınırken hata:", error)
     return { orders: [], totalCount: 0 }

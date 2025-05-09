@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
@@ -21,24 +21,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Loader2, Save, ArrowLeft, Trash2, Upload, X, ImageIcon, AlertCircle } from "lucide-react"
+import { Loader2, Save, ArrowLeft, Trash2, Upload, X } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import {
-  getCategories,
-  getProduct,
-  updateProduct,
-  deleteProduct,
-  deleteProductImage,
-  createProduct,
-} from "@/lib/admin-service"
+import { getCategories, getProduct, updateProduct, deleteProduct, deleteProductImage } from "@/lib/admin-service"
 import type { Category, Product, ProductImage } from "@/lib/admin-service"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function EditProductPage({ params }: { params: { id: string } }) {
-  const isNewProduct = params.id === "new"
-  const productId = isNewProduct ? 0 : Number.parseInt(params.id, 10)
-
+  const productId = Number.parseInt(params.id, 10)
   const [product, setProduct] = useState<Product | null>(null)
   const [name, setName] = useState("")
   const [slug, setSlug] = useState("")
@@ -57,14 +47,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   const [isDeleting, setIsDeleting] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [activeTab, setActiveTab] = useState("general")
-  const [tempImages, setTempImages] = useState<File[]>([])
-  const [tempImagePreviews, setTempImagePreviews] = useState<string[]>([])
-  const [uploadError, setUploadError] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  // Add refs to track manual changes
-  const priceChangedManually = useRef(false)
-  const originalPriceChangedManually = useRef(false)
-  const discountChangedManually = useRef(false)
   const router = useRouter()
   const { toast } = useToast()
 
@@ -72,18 +54,8 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     const fetchData = async () => {
       setIsLoading(true)
       try {
-        // Kategorileri her zaman al
-        const categoriesData = await getCategories()
-        setCategories(categoriesData)
-
-        // Eğer yeni ürün oluşturuluyorsa, ürün verisi alma
-        if (isNewProduct) {
-          setIsLoading(false)
-          return
-        }
-
-        // Mevcut ürünü al
-        const productData = await getProduct(productId)
+        // Ürün ve kategorileri al
+        const [productData, categoriesData] = await Promise.all([getProduct(productId), getCategories()])
 
         if (!productData) {
           toast({
@@ -108,6 +80,9 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         setStock(productData.stock.toString())
         setCategoryId(productData.category_id.toString())
         setImages(productData.images || [])
+
+        // Kategorileri ayarla
+        setCategories(categoriesData)
       } catch (error) {
         console.error("Veriler alınırken hata:", error)
         toast({
@@ -121,11 +96,11 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     }
 
     fetchData()
-  }, [productId, router, toast, isNewProduct])
+  }, [productId, router, toast])
 
   // Otomatik slug oluştur (sadece isim değiştiğinde ve slug manuel değiştirilmediyse)
   useEffect(() => {
-    if (name && ((product && name !== product.name && slug === product.slug) || (!product && !slug))) {
+    if (name && product && name !== product.name && slug === product.slug) {
       const slugified = name
         .toLowerCase()
         .replace(/ğ/g, "g")
@@ -141,108 +116,21 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     }
   }, [name, product, slug])
 
-  // İndirim yüzdesi hesapla - only when original price is changed manually
+  // İndirim yüzdesi hesapla
   useEffect(() => {
-    if (originalPriceChangedManually.current && price && originalPrice && Number(originalPrice) > Number(price)) {
-      discountChangedManually.current = false
+    if (price && originalPrice && Number(originalPrice) > Number(price)) {
       const discount = Math.round(((Number(originalPrice) - Number(price)) / Number(originalPrice)) * 100)
       setDiscountPercentage(discount.toString())
     }
-    // Reset the flag after the effect runs
-    originalPriceChangedManually.current = false
   }, [price, originalPrice])
 
-  // Orijinal fiyatı hesapla - only when discount percentage is changed manually
+  // Orijinal fiyatı hesapla
   useEffect(() => {
-    if (discountChangedManually.current && price && discountPercentage && Number(discountPercentage) > 0) {
-      originalPriceChangedManually.current = false
+    if (price && discountPercentage && Number(discountPercentage) > 0) {
       const original = Math.round((Number(price) * 100) / (100 - Number(discountPercentage)))
       setOriginalPrice(original.toString())
     }
-    // Reset the flag after the effect runs
-    discountChangedManually.current = false
   }, [price, discountPercentage])
-
-  // Handle price change
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    priceChangedManually.current = true
-    setPrice(e.target.value)
-  }
-
-  // Handle original price change
-  const handleOriginalPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    originalPriceChangedManually.current = true
-    setOriginalPrice(e.target.value)
-  }
-
-  // Handle discount percentage change
-  const handleDiscountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    discountChangedManually.current = true
-    setDiscountPercentage(e.target.value)
-  }
-
-  const handleTempImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files || files.length === 0) return
-
-    const newFiles = Array.from(files)
-    setTempImages((prev) => [...prev, ...newFiles])
-
-    // Create preview URLs
-    const newPreviews = newFiles.map((file) => URL.createObjectURL(file))
-    setTempImagePreviews((prev) => [...prev, ...newPreviews])
-
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ""
-    }
-  }
-
-  const handleRemoveTempImage = (index: number) => {
-    // Revoke object URL to avoid memory leaks
-    URL.revokeObjectURL(tempImagePreviews[index])
-
-    setTempImages((prev) => prev.filter((_, i) => i !== index))
-    setTempImagePreviews((prev) => prev.filter((_, i) => i !== index))
-  }
-
-  const uploadProductImages = async (productId: number, files: File[]): Promise<boolean> => {
-    setUploadError(null)
-    try {
-      for (const file of files) {
-        const formData = new FormData()
-        formData.append("productId", productId.toString())
-        formData.append("image", file)
-
-        const response = await fetch("/api/admin/upload-product-image", {
-          method: "POST",
-          body: formData,
-        })
-
-        const data = await response.json()
-
-        if (!response.ok) {
-          console.error("Image upload failed:", data)
-          throw new Error(data.error || "Resim yüklenirken bir hata oluştu")
-        }
-
-        // If this was successful, add the image to the images state
-        if (data.success && data.image) {
-          setImages((prevImages) => [...prevImages, data.image])
-        }
-
-        // If there's a note, it means we used the fallback method
-        if (data.note) {
-          console.warn("Image upload note:", data.note)
-        }
-      }
-      return true
-    } catch (error) {
-      console.error("Resimler yüklenirken hata:", error)
-      setUploadError(error instanceof Error ? error.message : "Resim yüklenirken bir hata oluştu")
-      return false
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -258,7 +146,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
     setIsSaving(true)
     try {
-      const productData = {
+      await updateProduct(productId, {
         name,
         slug,
         description,
@@ -269,57 +157,18 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         is_on_sale: isOnSale,
         stock: Number.parseInt(stock, 10),
         category_id: Number.parseInt(categoryId, 10),
-      }
+      })
 
-      if (isNewProduct) {
-        // Yeni ürün oluştur
-        const newProduct = await createProduct(productData)
-        if (newProduct) {
-          // Eğer geçici resimler varsa, yükle
-          if (tempImages.length > 0) {
-            const uploadSuccess = await uploadProductImages(newProduct.id, tempImages)
-            if (!uploadSuccess) {
-              toast({
-                variant: "destructive",
-                title: "Uyarı",
-                description: "Ürün oluşturuldu ancak bazı resimler yüklenemedi.",
-              })
-            }
-          }
-
-          toast({
-            title: "Başarılı",
-            description: "Ürün başarıyla oluşturuldu.",
-          })
-          router.push(`/admin/products/${newProduct.id}`)
-        }
-      } else {
-        // Mevcut ürünü güncelle
-        await updateProduct(productId, productData)
-
-        // If there are temporary images, upload them
-        if (tempImages.length > 0) {
-          const uploadSuccess = await uploadProductImages(productId, tempImages)
-          if (!uploadSuccess) {
-            toast({
-              variant: "destructive",
-              title: "Uyarı",
-              description: "Ürün güncellendi ancak bazı resimler yüklenemedi.",
-            })
-          }
-        }
-
-        toast({
-          title: "Başarılı",
-          description: "Ürün başarıyla güncellendi.",
-        })
-      }
+      toast({
+        title: "Başarılı",
+        description: "Ürün başarıyla güncellendi.",
+      })
     } catch (error) {
-      console.error(isNewProduct ? "Ürün oluşturulurken hata:" : "Ürün güncellenirken hata:", error)
+      console.error("Ürün güncellenirken hata:", error)
       toast({
         variant: "destructive",
         title: "Hata",
-        description: isNewProduct ? "Ürün oluşturulurken bir hata oluştu." : "Ürün güncellenirken bir hata oluştu.",
+        description: "Ürün güncellenirken bir hata oluştu.",
       })
     } finally {
       setIsSaving(false)
@@ -327,8 +176,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   }
 
   const handleDeleteProduct = async () => {
-    if (isNewProduct) return
-
     setIsDeleting(true)
     try {
       await deleteProduct(productId)
@@ -367,13 +214,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   }
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUploadError(null)
-
-    if (isNewProduct) {
-      handleTempImageUpload(e)
-      return
-    }
-
     const files = e.target.files
     if (!files || files.length === 0) return
 
@@ -382,36 +222,26 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     formData.append("image", files[0])
 
     try {
-      const response = await fetch("/api/admin/upload-product-image", {
+      const response = await fetch("/api/admin/update-product-images", {
         method: "POST",
         body: formData,
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
-        throw new Error(data.error || "Resim yüklenirken bir hata oluştu")
+        throw new Error("Resim yüklenirken bir hata oluştu")
       }
+
+      const data = await response.json()
 
       // Yeni resmi images listesine ekle
       setImages([...images, data.image])
 
-      // If there's a note, it means we used the fallback method
-      if (data.note) {
-        console.warn("Image upload note:", data.note)
-        toast({
-          title: "Bilgi",
-          description: "Resim alternatif yöntemle kaydedildi. Bazı özellikler sınırlı olabilir.",
-        })
-      } else {
-        toast({
-          title: "Başarılı",
-          description: "Resim başarıyla yüklendi.",
-        })
-      }
+      toast({
+        title: "Başarılı",
+        description: "Resim başarıyla yüklendi.",
+      })
     } catch (error) {
       console.error("Resim yüklenirken hata:", error)
-      setUploadError(error instanceof Error ? error.message : "Resim yüklenirken bir hata oluştu")
       toast({
         variant: "destructive",
         title: "Hata",
@@ -456,10 +286,8 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{isNewProduct ? "Yeni Ürün Ekle" : "Ürün Düzenle"}</h1>
-          <p className="text-muted-foreground">
-            {isNewProduct ? "Yeni bir ürün ekleyin." : "Ürün bilgilerini düzenleyin ve güncelleyin."}
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight">Ürün Düzenle</h1>
+          <p className="text-muted-foreground">Ürün bilgilerini düzenleyin ve güncelleyin.</p>
         </div>
         <div className="flex gap-2">
           <Link href="/admin/products">
@@ -468,12 +296,10 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
               Geri Dön
             </Button>
           </Link>
-          {!isNewProduct && (
-            <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              Ürünü Sil
-            </Button>
-          )}
+          <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            Ürünü Sil
+          </Button>
         </div>
       </div>
 
@@ -487,10 +313,8 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
           <form onSubmit={handleSubmit}>
             <Card>
               <CardHeader>
-                <CardTitle>{isNewProduct ? "Yeni Ürün Bilgileri" : "Ürün Bilgileri"}</CardTitle>
-                <CardDescription>
-                  {isNewProduct ? "Yeni ürünün temel bilgilerini girin." : "Ürünün temel bilgilerini düzenleyin."}
-                </CardDescription>
+                <CardTitle>Ürün Bilgileri</CardTitle>
+                <CardDescription>Ürünün temel bilgilerini düzenleyin.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -536,7 +360,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                       min="0"
                       step="0.01"
                       value={price}
-                      onChange={handlePriceChange}
+                      onChange={(e) => setPrice(e.target.value)}
                       placeholder="0.00"
                       required
                     />
@@ -549,7 +373,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                       min="0"
                       step="0.01"
                       value={originalPrice}
-                      onChange={handleOriginalPriceChange}
+                      onChange={(e) => setOriginalPrice(e.target.value)}
                       placeholder="0.00"
                     />
                     <p className="text-xs text-muted-foreground">İndirimli ürünler için normal fiyat</p>
@@ -562,7 +386,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                       min="0"
                       max="99"
                       value={discountPercentage}
-                      onChange={handleDiscountChange}
+                      onChange={(e) => setDiscountPercentage(e.target.value)}
                       placeholder="0"
                     />
                   </div>
@@ -618,12 +442,12 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                   {isSaving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {isNewProduct ? "Oluşturuluyor" : "Kaydediliyor"}
+                      Kaydediliyor
                     </>
                   ) : (
                     <>
                       <Save className="mr-2 h-4 w-4" />
-                      {isNewProduct ? "Oluştur" : "Kaydet"}
+                      Kaydet
                     </>
                   )}
                 </Button>
@@ -636,26 +460,12 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
           <Card>
             <CardHeader>
               <CardTitle>Ürün Resimleri</CardTitle>
-              <CardDescription>
-                {isNewProduct
-                  ? "Ürün için resimler ekleyin. Ürün kaydedildikten sonra yüklenecektir."
-                  : "Ürün resimlerini yönetin."}
-              </CardDescription>
+              <CardDescription>Ürün resimlerini yönetin.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {uploadError && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Hata</AlertTitle>
-                    <AlertDescription>{uploadError}</AlertDescription>
-                  </Alert>
-                )}
-
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="image-upload">
-                    {isNewProduct ? "Resim Ekle (Ürün kaydedildiğinde yüklenecek)" : "Yeni Resim Yükle"}
-                  </Label>
+                  <Label htmlFor="image-upload">Yeni Resim Yükle</Label>
                   <div className="flex items-center">
                     <Input
                       id="image-upload"
@@ -663,91 +473,40 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                       accept="image/*"
                       className="w-auto"
                       onChange={handleImageUpload}
-                      ref={fileInputRef}
                     />
-                    <Button variant="outline" className="ml-2" onClick={() => fileInputRef.current?.click()}>
+                    <Button variant="outline" className="ml-2">
                       <Upload className="h-4 w-4 mr-2" />
-                      Seç
+                      Yükle
                     </Button>
                   </div>
                 </div>
 
-                {isNewProduct ? (
-                  // Yeni ürün için geçici resim önizlemeleri
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {tempImagePreviews.length === 0 ? (
-                      <div className="col-span-full text-center p-8 border border-dashed rounded-md">
-                        <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-                        <p className="text-muted-foreground">Henüz resim eklenmedi</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {images.map((image) => (
+                    <div key={image.id} className="relative group">
+                      <div
+                        className={`relative aspect-square rounded-md overflow-hidden border ${image.is_primary ? "border-primary border-2" : "border-gray-200"}`}
+                      >
+                        <Image src={image.url || "/placeholder.svg"} alt="Ürün resmi" fill className="object-cover" />
                       </div>
-                    ) : (
-                      tempImagePreviews.map((preview, index) => (
-                        <div key={index} className="relative group">
-                          <div className="relative aspect-square rounded-md overflow-hidden border border-gray-200">
-                            <Image
-                              src={preview || "/placeholder.svg"}
-                              alt="Ürün resmi önizleme"
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleRemoveTempImage(index)}
-                              className="absolute top-2 right-2"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                ) : (
-                  // Mevcut ürün için resimler
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {images.length === 0 ? (
-                      <div className="col-span-full text-center p-8 border border-dashed rounded-md">
-                        <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-                        <p className="text-muted-foreground">Henüz resim eklenmedi</p>
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        {!image.is_primary && (
+                          <Button size="sm" variant="secondary" onClick={() => handleSetPrimaryImage(image.id)}>
+                            Ana Resim Yap
+                          </Button>
+                        )}
+                        <Button size="sm" variant="destructive" onClick={() => handleDeleteImage(image.id)}>
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
-                    ) : (
-                      images.map((image) => (
-                        <div key={image.id} className="relative group">
-                          <div
-                            className={`relative aspect-square rounded-md overflow-hidden border ${
-                              image.is_primary ? "border-primary border-2" : "border-gray-200"
-                            }`}
-                          >
-                            <Image
-                              src={image.url || "/placeholder.svg"}
-                              alt="Ürün resmi"
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                            {!image.is_primary && (
-                              <Button size="sm" variant="secondary" onClick={() => handleSetPrimaryImage(image.id)}>
-                                Ana Resim Yap
-                              </Button>
-                            )}
-                            <Button size="sm" variant="destructive" onClick={() => handleDeleteImage(image.id)}>
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          {image.is_primary && (
-                            <div className="absolute top-2 right-2 bg-primary text-white text-xs px-2 py-1 rounded">
-                              Ana Resim
-                            </div>
-                          )}
+                      {image.is_primary && (
+                        <div className="absolute top-2 right-2 bg-primary text-white text-xs px-2 py-1 rounded">
+                          Ana Resim
                         </div>
-                      ))
-                    )}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>
