@@ -169,30 +169,13 @@ export async function getProducts(
     }
 
     // Process products to ensure they have images
-    const productsWithImages = await Promise.all(
-      data?.map(async (product) => {
-        // Önce ürünün image_urls alanını kontrol et
-        if (product.image_urls && product.image_urls.length > 0) {
-          return { ...product, images: product.image_urls }
-        }
-
-        // Eğer image_urls yoksa, product_images tablosundan resimleri al
-        const { data: imageData } = await supabase
-          .from("product_images")
-          .select("url")
-          .eq("product_id", product.id)
-          .order("is_primary", { ascending: false })
-
-        const images = imageData && imageData.length > 0 ? imageData.map((img) => img.url) : [defaultProductImage]
-
-        // Ürünün image_urls alanını güncelle
-        if (images.length > 0 && images[0] !== defaultProductImage) {
-          await supabase.from("products").update({ image_urls: images }).eq("id", product.id)
-        }
+    const productsWithImages =
+      data?.map((product) => {
+        // Use image_urls from database if available
+        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
 
         return { ...product, images }
-      }) || [],
-    )
+      }) || []
 
     return {
       products: productsWithImages,
@@ -223,24 +206,8 @@ export async function getProductById(id: number): Promise<Product | null> {
       return null
     }
 
-    // Ürünün resimlerini al
-    let images = data.image_urls && data.image_urls.length > 0 ? data.image_urls : []
-
-    // Eğer image_urls yoksa, product_images tablosundan resimleri al
-    if (images.length === 0) {
-      const { data: imageData } = await supabase
-        .from("product_images")
-        .select("url")
-        .eq("product_id", id)
-        .order("is_primary", { ascending: false })
-
-      images = imageData && imageData.length > 0 ? imageData.map((img) => img.url) : [defaultProductImage]
-
-      // Ürünün image_urls alanını güncelle
-      if (images.length > 0 && images[0] !== defaultProductImage) {
-        await supabase.from("products").update({ image_urls: images }).eq("id", id)
-      }
-    }
+    // Use image_urls from database if available
+    const images = data.image_urls && data.image_urls.length > 0 ? data.image_urls : [defaultProductImage]
 
     return { ...data, images }
   } catch (error) {
@@ -265,24 +232,8 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
       return null
     }
 
-    // Ürünün resimlerini al
-    let images = data.image_urls && data.image_urls.length > 0 ? data.image_urls : []
-
-    // Eğer image_urls yoksa, product_images tablosundan resimleri al
-    if (images.length === 0) {
-      const { data: imageData } = await supabase
-        .from("product_images")
-        .select("url")
-        .eq("product_id", data.id)
-        .order("is_primary", { ascending: false })
-
-      images = imageData && imageData.length > 0 ? imageData.map((img) => img.url) : [defaultProductImage]
-
-      // Ürünün image_urls alanını güncelle
-      if (images.length > 0 && images[0] !== defaultProductImage) {
-        await supabase.from("products").update({ image_urls: images }).eq("id", data.id)
-      }
-    }
+    // Use image_urls from database if available
+    const images = data.image_urls && data.image_urls.length > 0 ? data.image_urls : [defaultProductImage]
 
     return { ...data, images }
   } catch (error) {
@@ -354,30 +305,13 @@ export async function getFeaturedProducts(limit = 8): Promise<Product[]> {
     }
 
     // Process products to ensure they have images
-    const productsWithImages = await Promise.all(
-      data?.map(async (product) => {
-        // Önce ürünün image_urls alanını kontrol et
-        if (product.image_urls && product.image_urls.length > 0) {
-          return { ...product, images: product.image_urls }
-        }
-
-        // Eğer image_urls yoksa, product_images tablosundan resimleri al
-        const { data: imageData } = await supabase
-          .from("product_images")
-          .select("url")
-          .eq("product_id", product.id)
-          .order("is_primary", { ascending: false })
-
-        const images = imageData && imageData.length > 0 ? imageData.map((img) => img.url) : [defaultProductImage]
-
-        // Ürünün image_urls alanını güncelle
-        if (images.length > 0 && images[0] !== defaultProductImage) {
-          await supabase.from("products").update({ image_urls: images }).eq("id", product.id)
-        }
+    const productsWithImages =
+      data?.map((product) => {
+        // Use image_urls from database if available
+        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
 
         return { ...product, images }
-      }) || [],
-    )
+      }) || []
 
     return productsWithImages
   } catch (error) {
@@ -405,30 +339,13 @@ export async function getPromotionalProducts(limit = 8): Promise<Product[]> {
     }
 
     // Process products to ensure they have images
-    const productsWithImages = await Promise.all(
-      data?.map(async (product) => {
-        // Önce ürünün image_urls alanını kontrol et
-        if (product.image_urls && product.image_urls.length > 0) {
-          return { ...product, images: product.image_urls }
-        }
-
-        // Eğer image_urls yoksa, product_images tablosundan resimleri al
-        const { data: imageData } = await supabase
-          .from("product_images")
-          .select("url")
-          .eq("product_id", product.id)
-          .order("is_primary", { ascending: false })
-
-        const images = imageData && imageData.length > 0 ? imageData.map((img) => img.url) : [defaultProductImage]
-
-        // Ürünün image_urls alanını güncelle
-        if (images.length > 0 && images[0] !== defaultProductImage) {
-          await supabase.from("products").update({ image_urls: images }).eq("id", product.id)
-        }
+    const productsWithImages =
+      data?.map((product) => {
+        // Use image_urls from database if available
+        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
 
         return { ...product, images }
-      }) || [],
-    )
+      }) || []
 
     return productsWithImages
   } catch (error) {
@@ -455,30 +372,13 @@ export async function getRelatedProducts(productId: number, categoryId: number, 
     }
 
     // Process products to ensure they have images
-    const productsWithImages = await Promise.all(
-      data?.map(async (product) => {
-        // Önce ürünün image_urls alanını kontrol et
-        if (product.image_urls && product.image_urls.length > 0) {
-          return { ...product, images: product.image_urls }
-        }
-
-        // Eğer image_urls yoksa, product_images tablosundan resimleri al
-        const { data: imageData } = await supabase
-          .from("product_images")
-          .select("url")
-          .eq("product_id", product.id)
-          .order("is_primary", { ascending: false })
-
-        const images = imageData && imageData.length > 0 ? imageData.map((img) => img.url) : [defaultProductImage]
-
-        // Ürünün image_urls alanını güncelle
-        if (images.length > 0 && images[0] !== defaultProductImage) {
-          await supabase.from("products").update({ image_urls: images }).eq("id", product.id)
-        }
+    const productsWithImages =
+      data?.map((product) => {
+        // Use image_urls from database if available
+        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
 
         return { ...product, images }
-      }) || [],
-    )
+      }) || []
 
     return productsWithImages
   } catch (error) {
@@ -557,30 +457,13 @@ export async function searchProducts(
     }
 
     // Process products to ensure they have images
-    const productsWithImages = await Promise.all(
-      data?.map(async (product) => {
-        // Önce ürünün image_urls alanını kontrol et
-        if (product.image_urls && product.image_urls.length > 0) {
-          return { ...product, images: product.image_urls }
-        }
-
-        // Eğer image_urls yoksa, product_images tablosundan resimleri al
-        const { data: imageData } = await supabase
-          .from("product_images")
-          .select("url")
-          .eq("product_id", product.id)
-          .order("is_primary", { ascending: false })
-
-        const images = imageData && imageData.length > 0 ? imageData.map((img) => img.url) : [defaultProductImage]
-
-        // Ürünün image_urls alanını güncelle
-        if (images.length > 0 && images[0] !== defaultProductImage) {
-          await supabase.from("products").update({ image_urls: images }).eq("id", product.id)
-        }
+    const productsWithImages =
+      data?.map((product) => {
+        // Use image_urls from database if available
+        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
 
         return { ...product, images }
-      }) || [],
-    )
+      }) || []
 
     return {
       products: productsWithImages,
@@ -618,30 +501,13 @@ export async function getSaleProducts(limit = 8): Promise<Product[]> {
     }
 
     // Process products to ensure they have images
-    const productsWithImages = await Promise.all(
-      data?.map(async (product) => {
-        // Önce ürünün image_urls alanını kontrol et
-        if (product.image_urls && product.image_urls.length > 0) {
-          return { ...product, images: product.image_urls }
-        }
-
-        // Eğer image_urls yoksa, product_images tablosundan resimleri al
-        const { data: imageData } = await supabase
-          .from("product_images")
-          .select("url")
-          .eq("product_id", product.id)
-          .order("is_primary", { ascending: false })
-
-        const images = imageData && imageData.length > 0 ? imageData.map((img) => img.url) : [defaultProductImage]
-
-        // Ürünün image_urls alanını güncelle
-        if (images.length > 0 && images[0] !== defaultProductImage) {
-          await supabase.from("products").update({ image_urls: images }).eq("id", product.id)
-        }
+    const productsWithImages =
+      data?.map((product) => {
+        // Use image_urls from database if available
+        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
 
         return { ...product, images }
-      }) || [],
-    )
+      }) || []
 
     return productsWithImages
   } catch (error) {
@@ -668,30 +534,13 @@ export async function getNewProducts(limit = 24): Promise<Product[]> {
     }
 
     // Process products to ensure they have images
-    const productsWithImages = await Promise.all(
-      data?.map(async (product) => {
-        // Önce ürünün image_urls alanını kontrol et
-        if (product.image_urls && product.image_urls.length > 0) {
-          return { ...product, images: product.image_urls }
-        }
-
-        // Eğer image_urls yoksa, product_images tablosundan resimleri al
-        const { data: imageData } = await supabase
-          .from("product_images")
-          .select("url")
-          .eq("product_id", product.id)
-          .order("is_primary", { ascending: false })
-
-        const images = imageData && imageData.length > 0 ? imageData.map((img) => img.url) : [defaultProductImage]
-
-        // Ürünün image_urls alanını güncelle
-        if (images.length > 0 && images[0] !== defaultProductImage) {
-          await supabase.from("products").update({ image_urls: images }).eq("id", product.id)
-        }
+    const productsWithImages =
+      data?.map((product) => {
+        // Use image_urls from database if available
+        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
 
         return { ...product, images }
-      }) || [],
-    )
+      }) || []
 
     return productsWithImages
   } catch (error) {
@@ -776,41 +625,6 @@ export async function updateAllProductImages(): Promise<boolean> {
     return true
   } catch (error) {
     console.error("Error updating all product images:", error)
-    return false
-  }
-}
-
-// Ürünlerin resimlerini product_images tablosundan alıp image_urls alanına kaydet
-export async function syncProductImages(): Promise<boolean> {
-  try {
-    // Tüm ürünleri al
-    const { data: products, error } = await supabase.from("products").select("id")
-
-    if (error) {
-      console.error("Ürünler alınırken hata:", error)
-      return false
-    }
-
-    // Her ürün için resimleri senkronize et
-    for (const product of products || []) {
-      // Ürünün resimlerini al
-      const { data: imageData } = await supabase
-        .from("product_images")
-        .select("url")
-        .eq("product_id", product.id)
-        .order("is_primary", { ascending: false })
-
-      if (imageData && imageData.length > 0) {
-        const imageUrls = imageData.map((img) => img.url)
-
-        // Ürünün image_urls alanını güncelle
-        await supabase.from("products").update({ image_urls: imageUrls }).eq("id", product.id)
-      }
-    }
-
-    return true
-  } catch (error) {
-    console.error("Ürün resimleri senkronize edilirken hata:", error)
     return false
   }
 }

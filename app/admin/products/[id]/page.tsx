@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
@@ -11,7 +12,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
   DialogContent,
@@ -23,12 +23,18 @@ import {
 import { Loader2, Save, ArrowLeft, Trash2, Upload, X, ImageIcon, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { getCategories, getProduct, updateProduct, deleteProduct, createProduct } from "@/lib/admin-service"
+import {
+  getCategories,
+  getProduct,
+  updateProduct,
+  deleteProduct,
+  deleteProductImage,
+  createProduct,
+} from "@/lib/admin-service"
 import type { Category, Product, ProductImage } from "@/lib/admin-service"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function EditProductPage({ params }: { params: { id: string } }) {
-  // Doğrudan params.id kullan, use() fonksiyonunu kullanma
   const isNewProduct = params.id === "new"
   const productId = isNewProduct ? 0 : Number.parseInt(params.id, 10)
 
@@ -49,9 +55,8 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState("general")
-  const [productImages, setProductImages] = useState<File[]>([])
-  const [productImagePreviews, setProductImagePreviews] = useState<string[]>([])
+  const [tempImages, setTempImages] = useState<File[]>([])
+  const [tempImagePreviews, setTempImagePreviews] = useState<string[]>([])
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   // Add refs to track manual changes
@@ -100,17 +105,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         setIsNew(productData.is_new || false)
         setStock(productData.stock.toString())
         setCategoryId(productData.category_id.toString())
-
-        // Ürün resimlerini ayarla
-        if (productData.images && Array.isArray(productData.images)) {
-          const productImages = productData.images.map((url, index) => ({
-            id: index,
-            product_id: productId,
-            url,
-            is_primary: index === 0,
-          }))
-          setImages(productImages)
-        }
+        setImages(productData.images || [])
       } catch (error) {
         console.error("Veriler alınırken hata:", error)
         toast({
@@ -184,16 +179,16 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     setDiscountPercentage(e.target.value)
   }
 
-  const handleProductImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTempImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
 
     const newFiles = Array.from(files)
-    setProductImages((prev) => [...prev, ...newFiles])
+    setTempImages((prev) => [...prev, ...newFiles])
 
     // Create preview URLs
     const newPreviews = newFiles.map((file) => URL.createObjectURL(file))
-    setProductImagePreviews((prev) => [...prev, ...newPreviews])
+    setTempImagePreviews((prev) => [...prev, ...newPreviews])
 
     // Reset file input
     if (fileInputRef.current) {
@@ -201,12 +196,12 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     }
   }
 
-  const handleRemoveProductImage = (index: number) => {
+  const handleRemoveTempImage = (index: number) => {
     // Revoke object URL to avoid memory leaks
-    URL.revokeObjectURL(productImagePreviews[index])
+    URL.revokeObjectURL(tempImagePreviews[index])
 
-    setProductImages((prev) => prev.filter((_, i) => i !== index))
-    setProductImagePreviews((prev) => prev.filter((_, i) => i !== index))
+    setTempImages((prev) => prev.filter((_, i) => i !== index))
+    setTempImagePreviews((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -223,6 +218,35 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
     setIsSaving(true)
     try {
+      // Önce resimleri yükle ve URL'leri al
+      const uploadedImageUrls: string[] = []
+
+      // Eğer geçici resimler varsa, yükle
+      if (tempImages.length > 0) {
+        for (const file of tempImages) {
+          const formData = new FormData()
+          formData.append("image", file)
+
+          const response = await fetch("/api/admin/upload-product-image", {
+            method: "POST",
+            body: formData,
+          })
+
+          const data = await response.json()
+
+          if (!response.ok) {
+            throw new Error(data.error || "Resim yüklenirken bir hata oluştu")
+          }
+
+          uploadedImageUrls.push(data.imageUrl)
+        }
+      }
+
+      // Mevcut ürün resimlerini de ekle
+      const existingImageUrls = images.map((img) => img.url)
+      const allImageUrls = [...existingImageUrls, ...uploadedImageUrls]
+
+      // Ürün verilerini hazırla
       const productData = {
         name,
         slug,
@@ -234,44 +258,29 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         is_on_sale: isOnSale,
         stock: Number.parseInt(stock, 10),
         category_id: Number.parseInt(categoryId, 10),
+        image_urls: allImageUrls.length > 0 ? allImageUrls : null,
       }
-
-      let savedProductId: number
 
       if (isNewProduct) {
         // Yeni ürün oluştur
         const newProduct = await createProduct(productData)
-        if (!newProduct) {
-          throw new Error("Ürün oluşturulamadı")
+        if (newProduct) {
+          toast({
+            title: "Başarılı",
+            description: "Ürün başarıyla oluşturuldu.",
+          })
+          router.push(`/admin/products/${newProduct.id}`)
         }
-        savedProductId = newProduct.id
-
-        toast({
-          title: "Başarılı",
-          description: "Ürün başarıyla oluşturuldu.",
-        })
       } else {
         // Mevcut ürünü güncelle
-        const updatedProduct = await updateProduct(productId, productData)
-        if (!updatedProduct) {
-          throw new Error("Ürün güncellenemedi")
-        }
-        savedProductId = productId
-
+        await updateProduct(productId, productData)
         toast({
           title: "Başarılı",
           description: "Ürün başarıyla güncellendi.",
         })
-      }
 
-      // Eğer yeni resimler varsa, yükle
-      if (productImages.length > 0) {
-        await uploadProductImages(savedProductId, slug)
-      }
-
-      // Yeni ürün oluşturulduysa, düzenleme sayfasına yönlendir
-      if (isNewProduct) {
-        router.push(`/admin/products/${savedProductId}`)
+        // Sayfayı yenile
+        router.refresh()
       }
     } catch (error) {
       console.error(isNewProduct ? "Ürün oluşturulurken hata:" : "Ürün güncellenirken hata:", error)
@@ -282,65 +291,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       })
     } finally {
       setIsSaving(false)
-    }
-  }
-
-  const uploadProductImages = async (productId: number, productSlug: string): Promise<void> => {
-    setUploadError(null)
-
-    try {
-      // Tüm resimleri içeren bir FormData oluştur
-      const formData = new FormData()
-      formData.append("productId", productId.toString())
-      formData.append("productSlug", productSlug)
-
-      // İlk resmi primary olarak işaretle
-      if (productImages.length > 0) {
-        formData.append("isPrimary", "true")
-      }
-
-      // Tüm resimleri ekle
-      productImages.forEach((file, index) => {
-        formData.append(`images`, file)
-      })
-
-      console.log("Formdata oluşturuldu, resim sayısı:", productImages.length)
-
-      // Resimleri yükle
-      const response = await fetch("/api/admin/upload-product-images", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error("API yanıt hatası:", response.status, errorText)
-        throw new Error(`Resim yükleme hatası: ${response.status} ${errorText}`)
-      }
-
-      const data = await response.json()
-
-      // Başarılı olursa, resim önizlemelerini temizle
-      setProductImages([])
-      setProductImagePreviews([])
-
-      // Yeni resimleri images state'ine ekle
-      if (data.images && data.images.length > 0) {
-        setImages((prev) => [...prev, ...data.images])
-      }
-
-      toast({
-        title: "Başarılı",
-        description: `${data.images.length} resim başarıyla yüklendi.`,
-      })
-    } catch (error) {
-      console.error("Resimler yüklenirken hata:", error)
-      setUploadError(error instanceof Error ? error.message : "Resim yüklenirken bir hata oluştu")
-      toast({
-        variant: "destructive",
-        title: "Hata",
-        description: "Resimler yüklenirken bir hata oluştu.",
-      })
     }
   }
 
@@ -366,27 +316,100 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     }
   }
 
-  const handleSetPrimaryImage = async (imageId: number) => {
+  const handleDeleteImage = async (imageId: number) => {
     try {
-      // API çağrısı yap
-      const response = await fetch(`/api/admin/set-primary-image`, {
+      await deleteProductImage(imageId)
+      setImages(images.filter((img) => img.id !== imageId))
+      toast({
+        title: "Başarılı",
+        description: "Resim başarıyla silindi.",
+      })
+    } catch (error) {
+      console.error("Resim silinirken hata:", error)
+      toast({
+        variant: "destructive",
+        title: "Hata",
+        description: "Resim silinirken bir hata oluştu.",
+      })
+    }
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUploadError(null)
+
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    // Yeni ürün oluşturma durumunda, resimleri geçici olarak sakla
+    if (isNewProduct) {
+      handleTempImageUpload(e)
+      return
+    }
+
+    // Mevcut ürün için doğrudan sunucuya yükle
+    const formData = new FormData()
+
+    // Birden fazla dosya için döngü
+    for (let i = 0; i < files.length; i++) {
+      formData.append("image", files[i])
+    }
+
+    try {
+      const response = await fetch("/api/admin/upload-product-image", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          imageId,
-          productId,
-        }),
+        body: formData,
       })
 
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || "Ana resim güncellenirken bir hata oluştu")
+        throw new Error(data.error || "Resim yüklenirken bir hata oluştu")
       }
 
-      // UI'ı güncelle
+      // Birden fazla resim URL'si dönebilir
+      const newImages = Array.isArray(data.imageUrls)
+        ? data.imageUrls.map((url: string) => ({
+            id: Date.now() + Math.random(), // Geçici ID
+            product_id: productId,
+            url: url,
+            is_primary: images.length === 0, // İlk resim ana resim olsun
+          }))
+        : [
+            {
+              id: Date.now(),
+              product_id: productId,
+              url: data.imageUrl,
+              is_primary: images.length === 0,
+            },
+          ]
+
+      // Yeni resimleri images listesine ekle
+      setImages([...images, ...newImages])
+
+      toast({
+        title: "Başarılı",
+        description: "Resim başarıyla yüklendi.",
+      })
+    } catch (error) {
+      console.error("Resim yüklenirken hata:", error)
+      setUploadError(error instanceof Error ? error.message : "Resim yüklenirken bir hata oluştu")
+      toast({
+        variant: "destructive",
+        title: "Hata",
+        description: "Resim yüklenirken bir hata oluştu.",
+      })
+    }
+
+    // Dosya input'unu temizle
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
+  const handleSetPrimaryImage = async (imageId: number) => {
+    try {
+      // API çağrısı yapılabilir
+      // Şimdilik sadece UI'ı güncelliyoruz
       const updatedImages = images.map((img) => ({
         ...img,
         is_primary: img.id === imageId,
@@ -403,40 +426,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         variant: "destructive",
         title: "Hata",
         description: "Ana resim güncellenirken bir hata oluştu.",
-      })
-    }
-  }
-
-  const handleDeleteImage = async (imageId: number) => {
-    try {
-      const response = await fetch(`/api/admin/delete-product-image`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          imageId,
-          productId,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Resim silinirken bir hata oluştu")
-      }
-
-      setImages(images.filter((img) => img.id !== imageId))
-      toast({
-        title: "Başarılı",
-        description: "Resim başarıyla silindi.",
-      })
-    } catch (error) {
-      console.error("Resim silinirken hata:", error)
-      toast({
-        variant: "destructive",
-        title: "Hata",
-        description: "Resim silinirken bir hata oluştu.",
       })
     }
   }
@@ -474,329 +463,182 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="general">Genel Bilgiler</TabsTrigger>
-          <TabsTrigger value="images">Resimler</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="general" className="space-y-4 mt-4">
-          <form onSubmit={handleSubmit}>
-            <Card>
-              <CardHeader>
-                <CardTitle>{isNewProduct ? "Yeni Ürün Bilgileri" : "Ürün Bilgileri"}</CardTitle>
-                <CardDescription>
-                  {isNewProduct ? "Yeni ürünün temel bilgilerini girin." : "Ürünün temel bilgilerini düzenleyin."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Ürün Adı</Label>
-                    <Input
-                      id="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Ürün adı"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="slug">Slug</Label>
-                    <Input
-                      id="slug"
-                      value={slug}
-                      onChange={(e) => setSlug(e.target.value)}
-                      placeholder="urun-slug"
-                      required
-                    />
-                  </div>
-                </div>
-
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>{isNewProduct ? "Yeni Ürün Bilgileri" : "Ürün Bilgileri"}</CardTitle>
+            <CardDescription>
+              {isNewProduct
+                ? "Yeni ürünün bilgilerini ve resimlerini ekleyin."
+                : "Ürün bilgilerini ve resimlerini düzenleyin."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Ürün Bilgileri */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Temel Bilgiler</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="description">Açıklama</Label>
-                  <Textarea
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Ürün açıklaması"
-                    rows={5}
+                  <Label htmlFor="name">Ürün Adı</Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Ürün adı"
+                    required
                   />
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Satış Fiyatı (₺)</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={price}
-                      onChange={handlePriceChange}
-                      placeholder="0.00"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="originalPrice">Normal Fiyat (₺)</Label>
-                    <Input
-                      id="originalPrice"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={originalPrice}
-                      onChange={handleOriginalPriceChange}
-                      placeholder="0.00"
-                    />
-                    <p className="text-xs text-muted-foreground">İndirimli ürünler için normal fiyat</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="discountPercentage">İndirim Yüzdesi (%)</Label>
-                    <Input
-                      id="discountPercentage"
-                      type="number"
-                      min="0"
-                      max="99"
-                      value={discountPercentage}
-                      onChange={handleDiscountChange}
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="stock">Stok</Label>
-                    <Input
-                      id="stock"
-                      type="number"
-                      min="0"
-                      value={stock}
-                      onChange={(e) => setStock(e.target.value)}
-                      placeholder="0"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="block mb-2">Yeni Ürün</Label>
-                    <div className="flex items-center space-x-2">
-                      <Switch id="is-new" checked={isNew} onCheckedChange={setIsNew} />
-                      <Label htmlFor="is-new">Yeni ürün olarak işaretle</Label>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="block mb-2">İndirimde</Label>
-                    <div className="flex items-center space-x-2">
-                      <Switch id="is-on-sale" checked={isOnSale} onCheckedChange={setIsOnSale} />
-                      <Label htmlFor="is-on-sale">İndirimde olarak işaretle</Label>
-                    </div>
-                  </div>
-                </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="category">Kategori</Label>
-                  <Select value={categoryId} onValueChange={setCategoryId} required>
-                    <SelectTrigger id="category">
-                      <SelectValue placeholder="Kategori seçin" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id.toString()}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="slug">Slug</Label>
+                  <Input
+                    id="slug"
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    placeholder="urun-slug"
+                    required
+                  />
                 </div>
+              </div>
 
-                {/* Ürün Resimleri Bölümü */}
-                <div className="space-y-4 border-t pt-4 mt-4">
-                  <div>
-                    <h3 className="text-lg font-medium">Ürün Resimleri</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Ürün için resimler ekleyin. Ürün kaydedildiğinde resimler otomatik olarak yüklenecektir.
-                    </p>
-                  </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Açıklama</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Ürün açıklaması"
+                  rows={5}
+                />
+              </div>
 
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="product-image-upload">Resim Ekle</Label>
-                    <div className="flex items-center">
-                      <Input
-                        id="product-image-upload"
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        className="w-auto"
-                        onChange={handleProductImageUpload}
-                        ref={fileInputRef}
-                      />
-                      <Button variant="outline" className="ml-2" onClick={() => fileInputRef.current?.click()}>
-                        <Upload className="h-4 w-4 mr-2" />
-                        Seç
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Resim Önizlemeleri */}
-                  {productImagePreviews.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                      {productImagePreviews.map((preview, index) => (
-                        <div key={index} className="relative group">
-                          <div className="relative aspect-square rounded-md overflow-hidden border border-gray-200">
-                            <Image
-                              src={preview || "/placeholder.svg"}
-                              alt="Ürün resmi önizleme"
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleRemoveProductImage(index)}
-                            className="absolute top-2 right-2"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Mevcut Resimler */}
-                  {!isNewProduct && images.length > 0 && (
-                    <div className="mt-4">
-                      <h4 className="text-sm font-medium mb-2">Mevcut Resimler</h4>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {images.map((image) => (
-                          <div key={image.id} className="relative group">
-                            <div
-                              className={`relative aspect-square rounded-md overflow-hidden border ${
-                                image.is_primary ? "border-primary border-2" : "border-gray-200"
-                              }`}
-                            >
-                              <Image
-                                src={image.url || "/placeholder.svg"}
-                                alt="Ürün resmi"
-                                fill
-                                className="object-cover"
-                              />
-                              {image.is_primary && (
-                                <div className="absolute top-2 right-2 bg-primary text-white text-xs px-2 py-1 rounded">
-                                  Ana Resim
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="price">Satış Fiyatı (₺)</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={price}
+                    onChange={handlePriceChange}
+                    placeholder="0.00"
+                    required
+                  />
                 </div>
-              </CardContent>
-              <CardFooter className="flex justify-end">
-                <Button type="submit" disabled={isSaving}>
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {isNewProduct ? "Oluşturuluyor" : "Kaydediliyor"}
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      {isNewProduct ? "Oluştur" : "Kaydet"}
-                    </>
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
-          </form>
-        </TabsContent>
+                <div className="space-y-2">
+                  <Label htmlFor="originalPrice">Normal Fiyat (₺)</Label>
+                  <Input
+                    id="originalPrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={originalPrice}
+                    onChange={handleOriginalPriceChange}
+                    placeholder="0.00"
+                  />
+                  <p className="text-xs text-muted-foreground">İndirimli ürünler için normal fiyat</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="discountPercentage">İndirim Yüzdesi (%)</Label>
+                  <Input
+                    id="discountPercentage"
+                    type="number"
+                    min="0"
+                    max="99"
+                    value={discountPercentage}
+                    onChange={handleDiscountChange}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
 
-        <TabsContent value="images" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Ürün Resimleri</CardTitle>
-              <CardDescription>
-                {isNewProduct
-                  ? "Ürün için resimler ekleyin. Ürün kaydedildikten sonra yüklenecektir."
-                  : "Ürün resimlerini yönetin."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {uploadError && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Hata</AlertTitle>
-                    <AlertDescription>{uploadError}</AlertDescription>
-                  </Alert>
-                )}
-
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="image-upload">
-                    {isNewProduct ? "Resim Ekle (Ürün kaydedildiğinde yüklenecek)" : "Yeni Resim Yükle"}
-                  </Label>
-                  <div className="flex items-center">
-                    <Input
-                      id="image-upload"
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="w-auto"
-                      onChange={handleProductImageUpload}
-                      ref={fileInputRef}
-                    />
-                    <Button variant="outline" className="ml-2" onClick={() => fileInputRef.current?.click()}>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Seç
-                    </Button>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="stock">Stok</Label>
+                  <Input
+                    id="stock"
+                    type="number"
+                    min="0"
+                    value={stock}
+                    onChange={(e) => setStock(e.target.value)}
+                    placeholder="0"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="block mb-2">Yeni Ürün</Label>
+                  <div className="flex items-center space-x-2">
+                    <Switch id="is-new" checked={isNew} onCheckedChange={setIsNew} />
+                    <Label htmlFor="is-new">Yeni ürün olarak işaretle</Label>
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <Label className="block mb-2">İndirimde</Label>
+                  <div className="flex items-center space-x-2">
+                    <Switch id="is-on-sale" checked={isOnSale} onCheckedChange={setIsOnSale} />
+                    <Label htmlFor="is-on-sale">İndirimde olarak işaretle</Label>
+                  </div>
+                </div>
+              </div>
 
-                {/* Yeni ürün için geçici resim önizlemeleri */}
-                {isNewProduct ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {productImagePreviews.length === 0 ? (
-                      <div className="col-span-full text-center p-8 border border-dashed rounded-md">
-                        <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-                        <p className="text-muted-foreground">Henüz resim eklenmedi</p>
-                      </div>
-                    ) : (
-                      productImagePreviews.map((preview, index) => (
-                        <div key={index} className="relative group">
-                          <div className="relative aspect-square rounded-md overflow-hidden border border-gray-200">
-                            <Image
-                              src={preview || "/placeholder.svg"}
-                              alt="Ürün resmi önizleme"
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleRemoveProductImage(index)}
-                              className="absolute top-2 right-2"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))
-                    )}
+              <div className="space-y-2">
+                <Label htmlFor="category">Kategori</Label>
+                <Select value={categoryId} onValueChange={setCategoryId} required>
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Kategori seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Ürün Resimleri */}
+            <div className="space-y-4 pt-4 border-t">
+              <h3 className="text-lg font-medium">Ürün Resimleri</h3>
+
+              {uploadError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Hata</AlertTitle>
+                  <AlertDescription>{uploadError}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="image-upload">Resim Yükle</Label>
+                <div className="flex items-center">
+                  <Input
+                    id="image-upload"
+                    type="file"
+                    accept="image/*"
+                    className="w-auto"
+                    onChange={handleImageUpload}
+                    ref={fileInputRef}
+                    multiple
+                  />
+                  <Button variant="outline" className="ml-2" onClick={() => fileInputRef.current?.click()}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Seç
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {images.length === 0 && tempImagePreviews.length === 0 ? (
+                  <div className="col-span-full text-center p-8 border border-dashed rounded-md">
+                    <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-muted-foreground">Henüz resim eklenmedi</p>
                   </div>
                 ) : (
-                  // Mevcut ürün için resimler
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {images.length === 0 ? (
-                      <div className="col-span-full text-center p-8 border border-dashed rounded-md">
-                        <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-                        <p className="text-muted-foreground">Henüz resim eklenmedi</p>
-                      </div>
-                    ) : (
+                  <>
+                    {/* Mevcut ürün için resimler */}
+                    {!isNewProduct &&
                       images.map((image) => (
                         <div key={image.id} className="relative group">
                           <div
@@ -827,55 +669,53 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                             </div>
                           )}
                         </div>
-                      ))
-                    )}
-                  </div>
-                )}
-
-                {/* Yeni eklenen resim önizlemeleri */}
-                {!isNewProduct && productImagePreviews.length > 0 && (
-                  <div className="mt-6">
-                    <h3 className="text-lg font-medium mb-4">Yeni Eklenecek Resimler</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {productImagePreviews.map((preview, index) => (
-                        <div key={index} className="relative group">
-                          <div className="relative aspect-square rounded-md overflow-hidden border border-gray-200">
-                            <Image
-                              src={preview || "/placeholder.svg"}
-                              alt="Ürün resmi önizleme"
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleRemoveProductImage(index)}
-                              className="absolute top-2 right-2"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
                       ))}
-                    </div>
-                    <div className="mt-4">
-                      <Button
-                        onClick={() => uploadProductImages(productId, slug)}
-                        disabled={productImages.length === 0}
-                      >
-                        <Upload className="mr-2 h-4 w-4" />
-                        Resimleri Yükle
-                      </Button>
-                    </div>
-                  </div>
+
+                    {/* Yeni ürün için geçici resim önizlemeleri */}
+                    {tempImagePreviews.map((preview, index) => (
+                      <div key={index} className="relative group">
+                        <div className="relative aspect-square rounded-md overflow-hidden border border-gray-200">
+                          <Image
+                            src={preview || "/placeholder.svg"}
+                            alt="Ürün resmi önizleme"
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleRemoveTempImage(index)}
+                            className="absolute top-2 right-2"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </>
                 )}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-end">
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isNewProduct ? "Oluşturuluyor" : "Kaydediliyor"}
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  {isNewProduct ? "Oluştur" : "Kaydet"}
+                </>
+              )}
+            </Button>
+          </CardFooter>
+        </Card>
+      </form>
 
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>

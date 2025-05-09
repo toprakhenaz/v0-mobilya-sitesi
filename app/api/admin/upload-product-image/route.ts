@@ -1,86 +1,73 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
+import { v4 as uuidv4 } from "uuid"
 import { writeFile, mkdir } from "fs/promises"
-import path from "path"
-import { addProductImage } from "@/lib/admin-service"
+import { join } from "path"
+import { existsSync } from "fs"
 
-export async function POST(request: NextRequest) {
+// Resim yükleme için hedef dizin
+const UPLOAD_DIR = join(process.cwd(), "public", "uploads", "products")
+
+// Dizinin var olduğundan emin ol
+async function ensureUploadDir() {
+  if (!existsSync(UPLOAD_DIR)) {
+    await mkdir(UPLOAD_DIR, { recursive: true })
+  }
+}
+
+export async function POST(request: Request) {
   try {
-    console.log("Resim yükleme API'si çağrıldı")
-
     const formData = await request.formData()
 
-    // Hem "file" hem de "image" olarak kontrol et
-    const file = (formData.get("file") as File) || (formData.get("image") as File)
-    const productId = formData.get("productId") as string
-    const isPrimary = formData.get("isPrimary") === "true"
+    // Dizinin var olduğundan emin ol
+    await ensureUploadDir()
 
-    console.log("Alınan form verileri:", {
-      fileExists: !!file,
-      productId,
-      isPrimary,
-      fileName: file?.name,
-      fileSize: file?.size,
-    })
+    // Tek bir resim veya çoklu resim olabilir
+    const images = formData.getAll("image") as File[]
 
-    if (!file) {
-      console.error("Dosya bulunamadı")
-      return NextResponse.json({ error: "Dosya bulunamadı" }, { status: 400 })
+    if (!images || images.length === 0) {
+      return NextResponse.json({ error: "Resim bulunamadı" }, { status: 400 })
     }
 
-    if (!productId) {
-      console.error("Ürün ID'si bulunamadı")
-      return NextResponse.json({ error: "Ürün ID'si bulunamadı" }, { status: 400 })
+    // Birden fazla resim için URL'leri sakla
+    const imageUrls: string[] = []
+
+    // Her resmi işle
+    for (const image of images) {
+      // Benzersiz dosya adı oluştur
+      const fileExt = image.name.split(".").pop()?.toLowerCase() || "jpg"
+      const fileName = `${uuidv4()}.${fileExt}`
+      const filePath = join(UPLOAD_DIR, fileName)
+
+      // Dosyayı diske kaydet
+      const buffer = Buffer.from(await image.arrayBuffer())
+      await writeFile(filePath, buffer)
+
+      // URL'yi listeye ekle (web'den erişilebilir path)
+      const imageUrl = `/uploads/products/${fileName}`
+      imageUrls.push(imageUrl)
     }
 
-    // Ürün slug'ını al
-    const productSlug = (formData.get("productSlug") as string) || "urun"
-
-    // Dosya adını oluştur: slug-timestamp.uzantı
-    const fileExtension = path.extname(file.name)
-    const timestamp = Date.now()
-    const fileName = `${productSlug}-${timestamp}${fileExtension}`
-
-    // Dosya yolunu oluştur
-    const uploadDir = path.join(process.cwd(), "public", "products")
-    const filePath = path.join(uploadDir, fileName)
-
-    console.log("Oluşturulan dosya yolu:", filePath)
-
-    // Klasörün var olduğundan emin ol
-    try {
-      await mkdir(uploadDir, { recursive: true })
-    } catch (error) {
-      console.error("Klasör oluşturulurken hata:", error)
+    // Tek resim yüklendiyse eski API yanıtı formatını koru
+    if (imageUrls.length === 1) {
+      return NextResponse.json({
+        success: true,
+        imageUrl: imageUrls[0],
+      })
     }
 
-    // Dosyayı kaydet
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-
-    await writeFile(filePath, buffer)
-    console.log("Dosya başarıyla kaydedildi:", filePath)
-
-    // Veritabanına kaydet
-    const imageUrl = `/products/${fileName}`
-    console.log("Veritabanına kaydedilecek URL:", imageUrl)
-
-    const savedImage = await addProductImage(Number.parseInt(productId), imageUrl, isPrimary)
-
-    if (!savedImage) {
-      console.error("Resim veritabanına kaydedilemedi")
-      return NextResponse.json({ error: "Resim veritabanına kaydedilemedi" }, { status: 500 })
-    }
-
-    console.log("Resim başarıyla yüklendi:", savedImage)
-
+    // Çoklu resim için yeni format
     return NextResponse.json({
       success: true,
-      message: "Resim başarıyla yüklendi",
-      image: savedImage,
-      url: imageUrl,
+      imageUrls: imageUrls,
     })
   } catch (error) {
-    console.error("Resim yüklenirken hata:", error)
-    return NextResponse.json({ error: "Resim yüklenirken hata oluştu" }, { status: 500 })
+    console.error("Resim yükleme hatası:", error)
+    return NextResponse.json(
+      {
+        error: "Resim yüklenirken bir hata oluştu",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    )
   }
 }

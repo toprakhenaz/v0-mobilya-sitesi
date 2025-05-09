@@ -7,22 +7,9 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
-  // Ürünün ilk resmini al
-  let productImage = "/placeholder.svg"
-
-  // Önce image_urls alanını kontrol et
-  if (product.image_urls && product.image_urls.length > 0) {
-    productImage = product.image_urls[0]
-  }
-  // Sonra images alanını kontrol et
-  else if (product.images && product.images.length > 0) {
-    productImage = product.images[0]
-  }
-
-  // Ürünün indirimli fiyatını hesapla
-  const discountedPrice = product.discount_percentage
-    ? product.price - (product.price * product.discount_percentage) / 100
-    : product.price
+  // Get the first image from the product's images array
+  // Images are now coming directly from the database via the image_urls field
+  const productImage = product.images && product.images.length > 0 ? product.images[0] : "/placeholder.svg"
 
   return (
     <Link href={`/urun/${product.slug}`} className="group">
@@ -53,10 +40,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
           </h3>
 
           <div className="flex items-center mt-2">
-            <span className="text-lg font-bold text-primary">{discountedPrice.toLocaleString("tr-TR")} ₺</span>
+            <span className="text-lg font-bold text-primary">{product.price.toLocaleString("tr-TR")} ₺</span>
 
-            {product.discount_percentage && product.discount_percentage > 0 && (
-              <span className="text-sm text-gray-500 line-through ml-2">{product.price.toLocaleString("tr-TR")} ₺</span>
+            {product.original_price && (
+              <span className="text-sm text-gray-500 line-through ml-2">
+                {product.original_price.toLocaleString("tr-TR")} ₺
+              </span>
             )}
           </div>
         </div>
