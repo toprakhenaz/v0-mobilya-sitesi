@@ -1,31 +1,60 @@
-import prisma from "./prisma"
-import type { Product, Category, HeroSlide, AdminUser } from "@prisma/client"
+import { supabase } from "./supabase-client"
+import type { Product, Category } from "./supabase"
 
-// Helper function to parse JSON fields
-function parseJsonField(field: string | null) {
-  if (!field) return null
-  try {
-    return JSON.parse(field)
-  } catch (error) {
-    console.error("Error parsing JSON field:", error)
-    return null
-  }
+// Define AdminUser type
+export type AdminUser = {
+  id: number
+  email: string
+  full_name: string
+  is_super_admin: boolean
+  last_login: string
+  created_at: string
+  updated_at: string
 }
 
-// Helper function to process product data
-function processProduct(product: any): any {
-  // Parse JSON fields
-  const imageUrls = parseJsonField(product.image_urls) || []
-  const features = parseJsonField(product.features) || []
-  const specifications = parseJsonField(product.specifications) || {}
+export type ProductImage = {
+  id: number
+  product_id: number
+  url: string
+  is_primary: boolean
+}
 
-  return {
-    ...product,
-    images: product.product_images || [],
-    image_urls: imageUrls,
-    features,
-    specifications,
-  }
+export type HeroSlide = {
+  id: number
+  image_url: string
+  title: string
+  subtitle: string | null
+  description: string | null
+  order_index: number
+  is_active: boolean
+}
+
+export type Order = {
+  id: number
+  user_id: string | null
+  total_amount: number
+  status: string
+  payment_method: string
+  payment_status: string
+  shipping_address: string
+  shipping_city: string
+  shipping_postal_code: string
+  shipping_country: string
+  contact_phone: string
+  created_at: string
+  updated_at: string
+  guest_email: string | null
+  tracking_number: string | null
+  user_email?: string
+  items?: any[]
+}
+
+export type OrderItem = {
+  id: number
+  order_id: number
+  product_id: number
+  quantity: number
+  price: number
 }
 
 // Admin login function
@@ -33,97 +62,76 @@ export async function adminLogin(
   email: string,
   password: string,
 ): Promise<{ user: AdminUser | null; error: string | null }> {
-  try {
-    // Bu örnek için basit bir doğrulama kullanıyoruz
-    // Gerçek uygulamada şifre hash'leme ve güvenli doğrulama kullanılmalıdır
-    const admin = await prisma.adminUser.findUnique({
-      where: { email },
-    })
-
-    if (!admin || admin.password_hash !== password) {
-      return { user: null, error: "Invalid credentials" }
+  // Placeholder implementation - replace with actual login logic
+  if (email === "admin@divonahome.com" && password === "password") {
+    const user: AdminUser = {
+      id: 1,
+      email: "admin@divonahome.com",
+      full_name: "Admin User",
+      is_super_admin: true,
+      last_login: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     }
-
-    // Update last login
-    await prisma.adminUser.update({
-      where: { id: admin.id },
-      data: { last_login: new Date() },
-    })
-
-    return { user: admin, error: null }
-  } catch (error) {
-    console.error("Error during admin login:", error)
-    return { user: null, error: "An error occurred during login" }
+    return { user, error: null }
+  } else {
+    return { user: null, error: "Invalid credentials" }
   }
 }
 
 // Get all categories
 export async function getCategories(searchTerm = ""): Promise<Category[]> {
   try {
-    const categories = await prisma.category.findMany({
-      where: searchTerm
-        ? {
-            name: {
-              contains: searchTerm,
-              mode: "insensitive",
-            },
-          }
-        : undefined,
-      orderBy: {
-        name: "asc",
-      },
-    })
+    let query = supabase.from("categories").select("*")
 
-    // Get product count for each category
-    const categoriesWithCount = await Promise.all(
-      categories.map(async (category) => {
-        const productCount = await prisma.product.count({
-          where: { category_id: category.id },
-        })
-        return {
-          ...category,
-          product_count: productCount,
-        }
-      }),
-    )
+    if (searchTerm) {
+      query = query.ilike("name", `%${searchTerm}%`)
+    }
 
-    return categoriesWithCount as any[]
+    const { data, error } = await query.order("name")
+
+    if (error) {
+      console.error("Kategoriler alınırken hata:", error.message)
+      throw new Error(error.message)
+    }
+
+    return data as Category[]
   } catch (error) {
-    console.error("Error fetching categories:", error)
+    console.error("Kategoriler alınırken hata:", error)
     return []
   }
 }
 
 // Create a new category
-export async function createCategory(
-  category: Omit<Category, "id" | "created_at" | "updated_at">,
-): Promise<Category | null> {
+export async function createCategory(category: Omit<Category, "id">): Promise<Category | null> {
   try {
-    const newCategory = await prisma.category.create({
-      data: category,
-    })
+    const { data, error } = await supabase.from("categories").insert([category]).select().single()
 
-    return newCategory
+    if (error) {
+      console.error("Kategori oluşturulurken hata:", error.message)
+      throw new Error(error.message)
+    }
+
+    return data as Category
   } catch (error) {
-    console.error("Error creating category:", error)
+    console.error("Kategori oluşturulurken hata:", error)
     return null
   }
 }
 
 // Update a category
-export async function updateCategory(
-  id: number,
-  category: Partial<Omit<Category, "id" | "created_at" | "updated_at">>,
-): Promise<Category | null> {
+export async function updateCategory(id: number, category: Partial<Category>): Promise<Category | null> {
   try {
-    const updatedCategory = await prisma.category.update({
-      where: { id },
-      data: category,
-    })
+    const { data, error } = await supabase.from("categories").update(category).eq("id", id).select().single()
 
-    return updatedCategory
+    if (error) {
+      console.error(`Kategori (ID: ${id}) güncellenirken hata:`, error.message)
+      throw new Error(error.message)
+    }
+
+    return data as Category
   } catch (error) {
-    console.error(`Error updating category (ID: ${id}):`, error)
+    console.error(`Kategori (ID: ${id}) güncellenirken hata:`, error)
     return null
   }
 }
@@ -131,11 +139,14 @@ export async function updateCategory(
 // Delete a category
 export async function deleteCategory(id: number): Promise<void> {
   try {
-    await prisma.category.delete({
-      where: { id },
-    })
+    const { error } = await supabase.from("categories").delete().eq("id", id)
+
+    if (error) {
+      console.error(`Kategori (ID: ${id}) silinirken hata:`, error.message)
+      throw new Error(error.message)
+    }
   } catch (error) {
-    console.error(`Error deleting category (ID: ${id}):`, error)
+    console.error(`Kategori (ID: ${id}) silinirken hata:`, error)
     throw error
   }
 }
@@ -145,126 +156,84 @@ export async function getProducts(
   page = 1,
   itemsPerPage = 10,
   searchTerm = "",
-): Promise<{ products: any[]; totalCount: number }> {
+): Promise<{ products: Product[]; totalCount: number }> {
   try {
-    const where = searchTerm
-      ? {
-          name: {
-            contains: searchTerm,
-            mode: "insensitive",
-          },
-        }
-      : undefined
+    let query = supabase.from("products").select(`*, category:categories(name)`, { count: "exact" })
 
-    const totalCount = await prisma.product.count({ where })
-
-    const products = await prisma.product.findMany({
-      where,
-      skip: (page - 1) * itemsPerPage,
-      take: itemsPerPage,
-      orderBy: {
-        created_at: "desc",
-      },
-      include: {
-        category: {
-          select: {
-            name: true,
-          },
-        },
-        product_images: true,
-      },
-    })
-
-    return {
-      products: products.map(processProduct),
-      totalCount,
+    if (searchTerm) {
+      query = query.ilike("name", `%${searchTerm}%`)
     }
+
+    const from = (page - 1) * itemsPerPage
+    const to = from + itemsPerPage - 1
+
+    const { data, error, count } = await query.range(from, to).order("created_at", { ascending: false })
+
+    if (error) {
+      console.error("Ürünler alınırken hata:", error.message)
+      throw new Error(error.message)
+    }
+
+    return { products: data as Product[], totalCount: count || 0 }
   } catch (error) {
-    console.error("Error fetching products:", error)
+    console.error("Ürünler alınırken hata:", error)
     return { products: [], totalCount: 0 }
   }
 }
 
 // Get a single product by ID
-export async function getProduct(id: number): Promise<any | null> {
+export async function getProduct(id: number): Promise<Product | null> {
   try {
+    // Check if id is valid
     if (isNaN(id) || id <= 0) {
-      console.error(`Invalid product ID: ${id}`)
+      console.error(`Geçersiz ürün ID: ${id}`)
       return null
     }
 
-    const product = await prisma.product.findUnique({
-      where: { id },
-      include: {
-        category: true,
-        product_images: true,
-      },
-    })
+    const { data, error } = await supabase.from("products").select(`*, category:categories(name)`).eq("id", id).single()
 
-    if (!product) {
+    if (error) {
+      console.error(`Ürün (ID: ${id}) alınırken hata:`, error.message)
       return null
     }
 
-    return processProduct(product)
+    return data as Product
   } catch (error) {
-    console.error(`Error fetching product (ID: ${id}):`, error)
+    console.error(`Ürün (ID: ${id}) alınırken hata:`, error)
     return null
   }
 }
 
 // Create a new product
-export async function createProduct(
-  product: Omit<Product, "id" | "created_at" | "updated_at">,
-): Promise<Product | null> {
+export async function createProduct(product: Omit<Product, "id" | "created_at">): Promise<Product | null> {
   try {
-    // Convert arrays and objects to JSON strings
-    const productData = {
-      ...product,
-      features: product.features ? JSON.stringify(product.features) : null,
-      specifications: product.specifications ? JSON.stringify(product.specifications) : null,
-      image_urls: product.image_urls ? JSON.stringify(product.image_urls) : null,
+    const { data, error } = await supabase.from("products").insert([product]).select().single()
+
+    if (error) {
+      console.error("Ürün oluşturulurken hata:", error.message)
+      throw new Error(error.message)
     }
 
-    const newProduct = await prisma.product.create({
-      data: productData as any,
-    })
-
-    return newProduct
+    return data as Product
   } catch (error) {
-    console.error("Error creating product:", error)
+    console.error("Ürün oluşturulurken hata:", error)
     return null
   }
 }
 
 // Update a product
-export async function updateProduct(
-  id: number,
-  product: Partial<Omit<Product, "id" | "created_at" | "updated_at">>,
-): Promise<Product | null> {
+export async function updateProduct(id: number, product: Partial<Product>): Promise<Product | null> {
   try {
-    // Convert arrays and objects to JSON strings if they exist
-    const productData: any = { ...product }
+    const { data, error } = await supabase.from("products").update(product).eq("id", id).select().single()
 
-    if (product.features) {
-      productData.features = JSON.stringify(product.features)
+    if (error) {
+      console.error(`Ürün (ID: ${id}) güncellenirken hata:`, error.message)
+      throw new Error(error.message)
     }
 
-    if (product.specifications) {
-      productData.specifications = JSON.stringify(product.specifications)
-    }
-
-    if (product.image_urls) {
-      productData.image_urls = JSON.stringify(product.image_urls)
-    }
-
-    const updatedProduct = await prisma.product.update({
-      where: { id },
-      data: productData,
-    })
-
-    return updatedProduct
+    return data as Product
   } catch (error) {
-    console.error(`Error updating product (ID: ${id}):`, error)
+    console.error(`Ürün (ID: ${id}) güncellenirken hata:`, error)
     return null
   }
 }
@@ -272,11 +241,14 @@ export async function updateProduct(
 // Delete a product
 export async function deleteProduct(id: number): Promise<void> {
   try {
-    await prisma.product.delete({
-      where: { id },
-    })
+    const { error } = await supabase.from("products").delete().eq("id", id)
+
+    if (error) {
+      console.error(`Ürün (ID: ${id}) silinirken hata:`, error.message)
+      throw new Error(error.message)
+    }
   } catch (error) {
-    console.error(`Error deleting product (ID: ${id}):`, error)
+    console.error(`Ürün (ID: ${id}) silinirken hata:`, error)
     throw error
   }
 }
@@ -284,11 +256,14 @@ export async function deleteProduct(id: number): Promise<void> {
 // Delete a product image
 export async function deleteProductImage(imageId: number): Promise<void> {
   try {
-    await prisma.productImage.delete({
-      where: { id: imageId },
-    })
+    const { error } = await supabase.from("product_images").delete().eq("id", imageId)
+
+    if (error) {
+      console.error(`Resim (ID: ${imageId}) silinirken hata:`, error.message)
+      throw new Error(error.message)
+    }
   } catch (error) {
-    console.error(`Error deleting image (ID: ${imageId}):`, error)
+    console.error(`Resim (ID: ${imageId}) silinirken hata:`, error)
     throw error
   }
 }
@@ -296,24 +271,20 @@ export async function deleteProductImage(imageId: number): Promise<void> {
 // Get order details
 export async function getOrderDetails(orderId: number): Promise<any | null> {
   try {
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: {
-        order_items: {
-          include: {
-            product: true,
-          },
-        },
-      },
-    })
+    const { data, error } = await supabase
+      .from("orders")
+      .select(`*, order_items(*, product:products(name))`)
+      .eq("id", orderId)
+      .single()
 
-    if (!order) {
+    if (error) {
+      console.error(`Sipariş detayları (ID: ${orderId}) alınırken hata:`, error.message)
       return null
     }
 
-    return order
+    return data
   } catch (error) {
-    console.error(`Error fetching order details (ID: ${orderId}):`, error)
+    console.error(`Sipariş detayları (ID: ${orderId}) alınırken hata:`, error)
     return null
   }
 }
@@ -321,17 +292,19 @@ export async function getOrderDetails(orderId: number): Promise<any | null> {
 // Update order status
 export async function updateOrderStatus(orderId: number, status: string): Promise<boolean> {
   try {
-    await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        status,
-        updated_at: new Date(),
-      },
-    })
+    const { error } = await supabase
+      .from("orders")
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", orderId)
+
+    if (error) {
+      console.error(`Sipariş durumu (ID: ${orderId}) güncellenirken hata:`, error.message)
+      return false
+    }
 
     return true
   } catch (error) {
-    console.error(`Error updating order status (ID: ${orderId}):`, error)
+    console.error(`Sipariş durumu (ID: ${orderId}) güncellenirken hata:`, error)
     return false
   }
 }
@@ -339,10 +312,16 @@ export async function updateOrderStatus(orderId: number, status: string): Promis
 // Get site settings
 export async function getSiteSettings(): Promise<any[]> {
   try {
-    const settings = await prisma.siteSetting.findMany()
-    return settings
+    const { data, error } = await supabase.from("site_settings").select("*")
+
+    if (error) {
+      console.error("Site ayarları alınırken hata:", error.message)
+      throw new Error(error.message)
+    }
+
+    return data || []
   } catch (error) {
-    console.error("Error fetching site settings:", error)
+    console.error("Site ayarları alınırken hata:", error)
     return []
   }
 }
@@ -351,14 +330,21 @@ export async function getSiteSettings(): Promise<any[]> {
 export async function updateMultipleSettings(settings: { key: string; value: string }[]): Promise<void> {
   try {
     for (const setting of settings) {
-      await prisma.siteSetting.upsert({
-        where: { key: setting.key },
-        update: { value: setting.value },
-        create: { key: setting.key, value: setting.value },
-      })
+      const { error } = await supabase.from("site_settings").upsert(
+        {
+          key: setting.key,
+          value: setting.value,
+        },
+        { onConflict: "key" },
+      )
+
+      if (error) {
+        console.error(`Ayarlar (Key: ${setting.key}) güncellenirken hata:`, error.message)
+        throw new Error(error.message)
+      }
     }
   } catch (error) {
-    console.error("Error updating settings:", error)
+    console.error("Ayarlar güncellenirken hata:", error)
     throw error
   }
 }
@@ -366,15 +352,16 @@ export async function updateMultipleSettings(settings: { key: string; value: str
 // Get all hero slides
 export async function getHeroSlides(): Promise<HeroSlide[]> {
   try {
-    const slides = await prisma.heroSlide.findMany({
-      orderBy: {
-        order_index: "asc",
-      },
-    })
+    const { data, error } = await supabase.from("hero_slides").select("*").order("order_index")
 
-    return slides
+    if (error) {
+      console.error("Hero slaytları alınırken hata:", error.message)
+      throw new Error(error.message)
+    }
+
+    return (data as HeroSlide[]) || []
   } catch (error) {
-    console.error("Error fetching hero slides:", error)
+    console.error("Hero slaytları alınırken hata:", error)
     return []
   }
 }
@@ -382,28 +369,33 @@ export async function getHeroSlides(): Promise<HeroSlide[]> {
 // Create a new hero slide
 export async function createHeroSlide(slide: Omit<HeroSlide, "id">): Promise<HeroSlide | null> {
   try {
-    const newSlide = await prisma.heroSlide.create({
-      data: slide,
-    })
+    const { data, error } = await supabase.from("hero_slides").insert([slide]).select().single()
 
-    return newSlide
+    if (error) {
+      console.error("Hero slayt oluşturulurken hata:", error.message)
+      throw new Error(error.message)
+    }
+
+    return data as HeroSlide
   } catch (error) {
-    console.error("Error creating hero slide:", error)
+    console.error("Hero slayt oluşturulurken hata:", error)
     return null
   }
 }
 
 // Update a hero slide
-export async function updateHeroSlide(id: number, slide: Partial<Omit<HeroSlide, "id">>): Promise<HeroSlide | null> {
+export async function updateHeroSlide(id: number, slide: Partial<HeroSlide>): Promise<HeroSlide | null> {
   try {
-    const updatedSlide = await prisma.heroSlide.update({
-      where: { id },
-      data: slide,
-    })
+    const { data, error } = await supabase.from("hero_slides").update(slide).eq("id", id).select().single()
 
-    return updatedSlide
+    if (error) {
+      console.error(`Hero slayt (ID: ${id}) güncellenirken hata:`, error.message)
+      throw new Error(error.message)
+    }
+
+    return data as HeroSlide
   } catch (error) {
-    console.error(`Error updating hero slide (ID: ${id}):`, error)
+    console.error(`Hero slayt (ID: ${id}) güncellenirken hata:`, error)
     return null
   }
 }
@@ -411,11 +403,14 @@ export async function updateHeroSlide(id: number, slide: Partial<Omit<HeroSlide,
 // Delete a hero slide
 export async function deleteHeroSlide(id: number): Promise<void> {
   try {
-    await prisma.heroSlide.delete({
-      where: { id },
-    })
+    const { error } = await supabase.from("hero_slides").delete().eq("id", id)
+
+    if (error) {
+      console.error(`Hero slayt (ID: ${id}) silinirken hata:`, error.message)
+      throw new Error(error.message)
+    }
   } catch (error) {
-    console.error(`Error deleting hero slide (ID: ${id}):`, error)
+    console.error(`Hero slayt (ID: ${id}) silinirken hata:`, error)
     throw error
   }
 }
@@ -424,13 +419,15 @@ export async function deleteHeroSlide(id: number): Promise<void> {
 export async function updateHeroSlideOrder(slides: { id: number; order_index: number }[]): Promise<void> {
   try {
     for (const slide of slides) {
-      await prisma.heroSlide.update({
-        where: { id: slide.id },
-        data: { order_index: slide.order_index },
-      })
+      const { error } = await supabase.from("hero_slides").update({ order_index: slide.order_index }).eq("id", slide.id)
+
+      if (error) {
+        console.error(`Hero slayt (ID: ${slide.id}) sırası güncellenirken hata:`, error.message)
+        throw new Error(error.message)
+      }
     }
   } catch (error) {
-    console.error("Error updating hero slide order:", error)
+    console.error("Hero slayt sırası güncellenirken hata:", error)
     throw error
   }
 }
@@ -442,45 +439,25 @@ export async function getUsers(
   searchTerm = "",
 ): Promise<{ users: any[]; totalCount: number }> {
   try {
-    const where = searchTerm
-      ? {
-          email: {
-            contains: searchTerm,
-            mode: "insensitive",
-          },
-        }
-      : undefined
+    let query = supabase.from("users").select("*", { count: "exact" })
 
-    const totalCount = await prisma.user.count({ where })
-
-    const users = await prisma.user.findMany({
-      where,
-      skip: (page - 1) * itemsPerPage,
-      take: itemsPerPage,
-      orderBy: {
-        created_at: "desc",
-      },
-    })
-
-    // Get order count for each user
-    const usersWithOrderCount = await Promise.all(
-      users.map(async (user) => {
-        const ordersCount = await prisma.order.count({
-          where: { user_id: user.id },
-        })
-        return {
-          ...user,
-          orders_count: ordersCount,
-        }
-      }),
-    )
-
-    return {
-      users: usersWithOrderCount,
-      totalCount,
+    if (searchTerm) {
+      query = query.ilike("email", `%${searchTerm}%`)
     }
+
+    const from = (page - 1) * itemsPerPage
+    const to = from + itemsPerPage - 1
+
+    const { data, error, count } = await query.range(from, to).order("created_at", { ascending: false })
+
+    if (error) {
+      console.error("Kullanıcılar alınırken hata:", error.message)
+      throw new Error(error.message)
+    }
+
+    return { users: data || [], totalCount: count || 0 }
   } catch (error) {
-    console.error("Error fetching users:", error)
+    console.error("Kullanıcılar alınırken hata:", error)
     return { users: [], totalCount: 0 }
   }
 }
@@ -493,49 +470,29 @@ export async function getOrders(
   searchTerm?: string,
 ): Promise<{ orders: any[]; totalCount: number }> {
   try {
-    // Build where clause
-    const where: any = {}
+    let query = supabase.from("orders").select("*", { count: "exact" })
 
     if (statusFilter && statusFilter !== "all") {
-      where.status = statusFilter
+      query = query.eq("status", statusFilter)
     }
 
     if (searchTerm) {
-      where.id = {
-        equals: Number.parseInt(searchTerm, 10) || undefined,
-      }
+      query = query.ilike("id", `%${searchTerm}%`)
     }
 
-    const totalCount = await prisma.order.count({ where })
+    const from = (page - 1) * itemsPerPage
+    const to = from + itemsPerPage - 1
 
-    const orders = await prisma.order.findMany({
-      where,
-      skip: (page - 1) * itemsPerPage,
-      take: itemsPerPage,
-      orderBy: {
-        created_at: "desc",
-      },
-      include: {
-        user: {
-          select: {
-            email: true,
-          },
-        },
-      },
-    })
+    const { data, error, count } = await query.range(from, to).order("created_at", { ascending: false })
 
-    // Add user_email field
-    const ordersWithEmail = orders.map((order) => ({
-      ...order,
-      user_email: order.user?.email || order.guest_email || "Misafir Kullanıcı",
-    }))
-
-    return {
-      orders: ordersWithEmail,
-      totalCount,
+    if (error) {
+      console.error("Siparişler alınırken hata:", error.message)
+      throw new Error(error.message)
     }
+
+    return { orders: data || [], totalCount: count || 0 }
   } catch (error) {
-    console.error("Error fetching orders:", error)
+    console.error("Siparişler alınırken hata:", error)
     return { orders: [], totalCount: 0 }
   }
 }
