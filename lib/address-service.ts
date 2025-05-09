@@ -1,29 +1,16 @@
-import { supabase } from "@/lib/supabase-client"
-
-export type Address = {
-  id?: number
-  user_id: string
-  title: string
-  full_name: string
-  address: string
-  city: string
-  postal_code: string
-  country: string
-  phone: string
-  is_default: boolean
-}
+import prisma from "./prisma"
+import type { Address } from "@prisma/client"
 
 export async function getAddressesByUserId(userId: string): Promise<Address[]> {
   try {
-    const { data, error } = await supabase
-      .from("addresses")
-      .select("*")
-      .eq("user_id", userId)
-      .order("is_default", { ascending: false })
+    const addresses = await prisma.address.findMany({
+      where: {
+        user_id: userId,
+      },
+      orderBy: [{ is_default: "desc" }, { id: "asc" }],
+    })
 
-    if (error) throw error
-
-    return data || []
+    return addresses
   } catch (error) {
     console.error("Error fetching addresses:", error)
     throw error
@@ -34,18 +21,22 @@ export async function createAddress(address: Omit<Address, "id">): Promise<Addre
   try {
     // If this address is set as default, update other default addresses
     if (address.is_default) {
-      await supabase
-        .from("addresses")
-        .update({ is_default: false })
-        .eq("user_id", address.user_id)
-        .eq("is_default", true)
+      await prisma.address.updateMany({
+        where: {
+          user_id: address.user_id,
+          is_default: true,
+        },
+        data: {
+          is_default: false,
+        },
+      })
     }
 
-    const { data, error } = await supabase.from("addresses").insert(address).select().single()
+    const newAddress = await prisma.address.create({
+      data: address,
+    })
 
-    if (error) throw error
-
-    return data
+    return newAddress
   } catch (error) {
     console.error("Error creating address:", error)
     throw error
@@ -55,19 +46,24 @@ export async function createAddress(address: Omit<Address, "id">): Promise<Addre
 export async function updateAddress(id: number, address: Partial<Address>): Promise<Address> {
   try {
     // If this address is set as default, update other default addresses
-    if (address.is_default) {
-      await supabase
-        .from("addresses")
-        .update({ is_default: false })
-        .eq("user_id", address.user_id)
-        .eq("is_default", true)
+    if (address.is_default && address.user_id) {
+      await prisma.address.updateMany({
+        where: {
+          user_id: address.user_id,
+          is_default: true,
+        },
+        data: {
+          is_default: false,
+        },
+      })
     }
 
-    const { data, error } = await supabase.from("addresses").update(address).eq("id", id).select().single()
+    const updatedAddress = await prisma.address.update({
+      where: { id },
+      data: address,
+    })
 
-    if (error) throw error
-
-    return data
+    return updatedAddress
   } catch (error) {
     console.error("Error updating address:", error)
     throw error
@@ -76,9 +72,9 @@ export async function updateAddress(id: number, address: Partial<Address>): Prom
 
 export async function deleteAddress(id: number): Promise<void> {
   try {
-    const { error } = await supabase.from("addresses").delete().eq("id", id)
-
-    if (error) throw error
+    await prisma.address.delete({
+      where: { id },
+    })
   } catch (error) {
     console.error("Error deleting address:", error)
     throw error

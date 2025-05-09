@@ -23,42 +23,103 @@ const categoryImages: Record<string, string> = {
   "ozel-tasarim": "/custom-furniture-design.png",
 }
 
+// Fallback categories if API fails
+const fallbackCategories = [
+  {
+    id: 1,
+    name: "Bahçe Oturma Grupları",
+    slug: "bahce-oturma-gruplari",
+    image_url: "/categories/bahce-oturma-gruplari.jpg",
+  },
+  {
+    id: 2,
+    name: "Bahçe Köşe Takımları",
+    slug: "bahce-kose-takimlari",
+    image_url: "/categories/bahce-kose-takimlari.jpg",
+  },
+  {
+    id: 3,
+    name: "Masa Takımları",
+    slug: "masa-takimlari",
+    image_url: "/categories/masa-takimlari.jpg",
+  },
+  {
+    id: 4,
+    name: "Şezlonglar",
+    slug: "sezlonglar",
+    image_url: "/categories/sezlonglar.jpg",
+  },
+  {
+    id: 5,
+    name: "Sandalyeler",
+    slug: "sandalyeler",
+    image_url: "/categories/sandalyeler.png",
+  },
+]
+
 export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [saleProducts, setSaleProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch featured products (newest products)
-        const featured = await getFeaturedProducts(4)
-        setFeaturedProducts(featured)
+        setIsLoading(true)
+        setError(null)
 
-        // Fetch sale products
-        const sale = await getSaleProducts(4)
-        setSaleProducts(sale)
+        // Fetch categories with error handling
+        let categoriesData = []
+        try {
+          categoriesData = await getCategories()
 
-        // Fetch categories
-        const categoriesData = await getCategories()
+          // If categories is empty array, use fallback
+          if (!categoriesData || categoriesData.length === 0) {
+            console.log("Using fallback categories")
+            categoriesData = fallbackCategories
+          }
+        } catch (error) {
+          console.error("Error fetching categories:", error)
+          categoriesData = fallbackCategories // Use fallback categories
+        }
 
         // Add image URLs to categories if they don't have one
         const categoriesWithImages = categoriesData.map((category) => {
-          if (!category.image_url) {
+          if (!category?.image_url) {
             return {
               ...category,
               image_url:
-                categoryImages[category.slug] ||
-                `/placeholder.svg?height=300&width=300&query=${encodeURIComponent(category.name + " furniture")}`,
+                categoryImages[category?.slug] ||
+                `/placeholder.svg?height=300&width=300&query=${encodeURIComponent((category?.name || "furniture") + " furniture")}`,
             }
           }
           return category
         })
 
         setCategories(categoriesWithImages)
+
+        // Fetch featured products with error handling
+        try {
+          const featured = await getFeaturedProducts(4)
+          setFeaturedProducts(featured)
+        } catch (error) {
+          console.error("Error fetching featured products:", error)
+          setFeaturedProducts([])
+        }
+
+        // Fetch sale products with error handling
+        try {
+          const sale = await getSaleProducts(4)
+          setSaleProducts(sale)
+        } catch (error) {
+          console.error("Error fetching sale products:", error)
+          setSaleProducts([])
+        }
       } catch (error) {
-        console.error("Error fetching data:", error)
+        console.error("Error in fetchData:", error)
+        setError("Veri yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.")
       } finally {
         setIsLoading(false)
       }
@@ -71,6 +132,15 @@ export default function Home() {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-[60vh] p-4">
+        <h2 className="text-xl font-bold text-red-600 mb-4">{error}</h2>
+        <Button onClick={() => window.location.reload()}>Sayfayı Yenile</Button>
       </div>
     )
   }
@@ -123,11 +193,17 @@ export default function Home() {
               Tümünü Gör
             </Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {saleProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          {saleProducts.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              {saleProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p>Şu anda kampanyalı ürün bulunmamaktadır.</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -135,11 +211,17 @@ export default function Home() {
       <section className="py-8">
         <div className="container-custom">
           <h2 className="text-2xl font-bold mb-6">Öne Çıkan Ürünler</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          {featuredProducts.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              {featuredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p>Şu anda öne çıkan ürün bulunmamaktadır.</p>
+            </div>
+          )}
           <div className="text-center mt-8">
             <Link href="/urunler">
               <Button variant="outline" size="lg">

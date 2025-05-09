@@ -1,214 +1,153 @@
-import { supabase } from "./supabase-client"
+import prisma from "./prisma"
+import type { Order } from "@prisma/client"
 
-export interface Order {
-  id: number
-  user_id: string | null
-  guest_email?: string | null
-  status: string
-  total_amount: number
-  shipping_address: string
-  billing_address: string
-  payment_method: string
-  created_at: string
-  updated_at: string
-  tracking_number?: string | null
-  items?: OrderItem[]
-}
+// Helper function to process product data
+function processProduct(product: any): any {
+  // Parse JSON fields
+  const imageUrls = product.image_urls ? JSON.parse(product.image_urls) : []
 
-export interface OrderItem {
-  id: number
-  order_id: number
-  product_id: number
-  quantity: number
-  price: number
-  product?: {
-    name: string
-    slug: string
+  return {
+    ...product,
+    images: imageUrls.length > 0 ? imageUrls : ["/placeholder.svg"],
   }
 }
 
 // Get orders for a specific user
-export async function getUserOrders(userId: string): Promise<Order[]> {
+export async function getUserOrders(userId: string): Promise<any[]> {
   try {
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
+    const orders = await prisma.order.findMany({
+      where: {
+        user_id: userId,
+      },
+      orderBy: {
+        created_at: "desc",
+      },
+    })
 
-    if (error) {
-      console.error("Siparişler alınırken hata:", error.message)
-      throw new Error(error.message)
-    }
-
-    return data || []
+    return orders
   } catch (error) {
-    console.error("Siparişler alınırken hata:", error)
+    console.error("Error fetching user orders:", error)
     return []
   }
 }
 
 // Get a specific order by ID
-export async function getOrderById(orderId: number): Promise<Order | null> {
+export async function getOrderById(orderId: number): Promise<any | null> {
   try {
-    // Get the order
-    const { data, error } = await supabase.from("orders").select("*").eq("id", orderId)
+    const order = await prisma.order.findUnique({
+      where: {
+        id: orderId,
+      },
+      include: {
+        order_items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    })
 
-    if (error) {
-      console.error(`Sipariş (ID: ${orderId}) alınırken hata:`, error.message)
+    if (!order) {
       return null
     }
 
-    // If no order found, return null
-    if (!data || data.length === 0) {
-      return null
-    }
-
-    const order = data[0]
-
-    // Get order items
-    const { data: items, error: itemsError } = await supabase
-      .from("order_items")
-      .select("*, product:products(name, slug)")
-      .eq("order_id", orderId)
-
-    if (itemsError) {
-      console.error(`Sipariş ürünleri (Sipariş ID: ${orderId}) alınırken hata:`, itemsError.message)
-    }
-
-    return {
+    // Process products in order items
+    const orderWithProcessedItems = {
       ...order,
-      items: items || [],
+      items: order.order_items.map((item) => ({
+        ...item,
+        product: item.product ? processProduct(item.product) : null,
+      })),
     }
+
+    return orderWithProcessedItems
   } catch (error) {
-    console.error(`Sipariş (ID: ${orderId}) alınırken hata:`, error)
+    console.error(`Error fetching order (ID: ${orderId}):`, error)
     return null
   }
 }
 
-// Get order by tracking number - FIXED VERSION
-export async function getOrderByTrackingNumber(trackingNumber: string): Promise<Order | null> {
+// Get order by tracking number
+export async function getOrderByTrackingNumber(trackingNumber: string): Promise<any | null> {
   try {
-    // Trim the tracking number to remove any whitespace
     const cleanTrackingNumber = trackingNumber.trim()
 
-    console.log(`Takip numarası ile arama: "${cleanTrackingNumber}"`)
+    const order = await prisma.order.findFirst({
+      where: {
+        tracking_number: cleanTrackingNumber,
+      },
+      include: {
+        order_items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    })
 
-    // Debug: List all tracking numbers to see what's available
-    const { data: allOrders, error: listError } = await supabase
-      .from("orders")
-      .select("id, tracking_number")
-      .order("id", { ascending: true })
-
-    if (listError) {
-      console.error("Takip numaraları listelenirken hata:", listError.message)
-    } else {
-      console.log("Mevcut takip numaraları:", JSON.stringify(allOrders))
-    }
-
-    // Direct query with exact match
-    const { data, error } = await supabase.from("orders").select("*").eq("tracking_number", cleanTrackingNumber)
-
-    if (error) {
-      console.error(`Sipariş (Takip No: ${cleanTrackingNumber}) alınırken hata:`, error.message)
-      return null
-    }
-
-    // If no exact match, try case-insensitive match
-    if (!data || data.length === 0) {
-      console.log("Tam eşleşme bulunamadı, büyük/küçük harf duyarsız arama yapılıyor...")
-
-      // Try a raw SQL query as a last resort
-      const { data: rawData, error: rawError } = await supabase.rpc("find_order_by_tracking", {
-        p_tracking_number: cleanTrackingNumber,
-      })
-
-      if (rawError) {
-        console.error("RPC çağrısı sırasında hata:", rawError.message)
-      } else if (rawData && rawData.length > 0) {
-        console.log("RPC ile sipariş bulundu:", rawData)
-
-        // Get order items
-        const orderId = rawData[0].id
-        const { data: items, error: itemsError } = await supabase
-          .from("order_items")
-          .select("*, product:products(name, slug)")
-          .eq("order_id", orderId)
-
-        if (itemsError) {
-          console.error(`Sipariş ürünleri (Sipariş ID: ${orderId}) alınırken hata:`, itemsError.message)
-        }
-
-        return {
-          ...rawData[0],
-          items: items || [],
-        }
-      }
+    if (!order) {
+      // If no exact match, try a case-insensitive match
+      console.log("No exact match found, trying case-insensitive search...")
 
       // If still no match, try a direct ID lookup if the tracking number looks like a number
       if (/^\d+$/.test(cleanTrackingNumber)) {
-        console.log("Takip numarası sayısal, ID olarak deneniyor...")
+        console.log("Tracking number is numeric, trying as ID...")
         const orderId = Number.parseInt(cleanTrackingNumber, 10)
         return await getOrderById(orderId)
       }
 
-      console.log("Sipariş bulunamadı")
       return null
     }
 
-    console.log(`Sipariş bulundu: ID=${data[0].id}, Takip No=${data[0].tracking_number}`)
-    const order = data[0]
-
-    // Get order items
-    const { data: items, error: itemsError } = await supabase
-      .from("order_items")
-      .select("*, product:products(name, slug)")
-      .eq("order_id", order.id)
-
-    if (itemsError) {
-      console.error(`Sipariş ürünleri (Sipariş ID: ${order.id}) alınırken hata:`, itemsError.message)
-    }
-
-    return {
+    // Process products in order items
+    const orderWithProcessedItems = {
       ...order,
-      items: items || [],
+      items: order.order_items.map((item) => ({
+        ...item,
+        product: item.product ? processProduct(item.product) : null,
+      })),
     }
+
+    return orderWithProcessedItems
   } catch (error) {
-    console.error(`Sipariş (Takip No: ${trackingNumber}) alınırken hata:`, error)
+    console.error(`Error fetching order (Tracking No: ${trackingNumber}):`, error)
     return null
   }
 }
 
 // Get a specific order by ID for a specific user
-export async function getUserOrderById(userId: string, orderId: number): Promise<Order | null> {
+export async function getUserOrderById(userId: string, orderId: number): Promise<any | null> {
   try {
-    // Get the order
-    const { data, error } = await supabase.from("orders").select("*").eq("id", orderId).eq("user_id", userId).single()
+    const order = await prisma.order.findFirst({
+      where: {
+        id: orderId,
+        user_id: userId,
+      },
+      include: {
+        order_items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    })
 
-    if (error) {
-      console.error(`Sipariş (ID: ${orderId}, Kullanıcı ID: ${userId}) alınırken hata:`, error.message)
+    if (!order) {
       return null
     }
 
-    // Get order items
-    const { data: items, error: itemsError } = await supabase
-      .from("order_items")
-      .select("*, product:products(name, slug)")
-      .eq("order_id", orderId)
-
-    if (itemsError) {
-      console.error(
-        `Sipariş ürünleri (Sipariş ID: ${orderId}, Kullanıcı ID: ${userId}) alınırken hata:`,
-        itemsError.message,
-      )
+    // Process products in order items
+    const orderWithProcessedItems = {
+      ...order,
+      items: order.order_items.map((item) => ({
+        ...item,
+        product: item.product ? processProduct(item.product) : null,
+      })),
     }
 
-    return {
-      ...data,
-      items: items || [],
-    }
+    return orderWithProcessedItems
   } catch (error) {
-    console.error(`Sipariş (ID: ${orderId}, Kullanıcı ID: ${userId}) alınırken hata:`, error)
+    console.error(`Error fetching user order (ID: ${orderId}, User ID: ${userId}):`, error)
     return null
   }
 }
@@ -222,7 +161,7 @@ export async function createOrder(
   guestEmail?: string,
 ): Promise<Order> {
   try {
-    console.log("createOrder çağrıldı:", { userId, cartItems, shippingAddress, phone, guestEmail })
+    console.log("createOrder called:", { userId, cartItems, shippingAddress, phone, guestEmail })
 
     // Calculate total amount
     const subtotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
@@ -231,61 +170,52 @@ export async function createOrder(
 
     // Generate a tracking number
     const trackingNumber = generateTrackingNumber()
-    console.log("Oluşturulan takip numarası:", trackingNumber)
-
-    // Format address as string
-    const addressStr = `${shippingAddress.full_name}, ${shippingAddress.address}, ${shippingAddress.city}, ${shippingAddress.postal_code}, ${shippingAddress.country}, ${phone}`
+    console.log("Generated tracking number:", trackingNumber)
 
     // Create order
-    const { data: orderData, error: orderError } = await supabase
-      .from("orders")
-      .insert([
-        {
-          user_id: userId,
-          guest_email: guestEmail,
-          status: "pending",
-          total_amount: total,
-          shipping_address: addressStr,
-          billing_address: addressStr, // Same as shipping address
-          payment_method: "bank_transfer",
-          tracking_number: trackingNumber,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+    const order = await prisma.order.create({
+      data: {
+        user_id: userId,
+        guest_email: guestEmail,
+        status: "pending",
+        total_amount: total,
+        shipping_address: shippingAddress.address,
+        shipping_city: shippingAddress.city,
+        shipping_postal_code: shippingAddress.postal_code,
+        shipping_country: shippingAddress.country || "Türkiye",
+        contact_phone: phone,
+        payment_method: "bank_transfer",
+        payment_status: "pending",
+        tracking_number: trackingNumber,
+        order_items: {
+          create: cartItems.map((item) => ({
+            product_id: item.product_id,
+            quantity: item.quantity,
+            price: item.price,
+          })),
         },
-      ])
-      .select()
+      },
+    })
 
-    if (orderError) {
-      console.error("Sipariş oluşturulurken hata:", orderError.message)
-      throw new Error(orderError.message)
-    }
+    // Update product stock
+    for (const item of cartItems) {
+      const product = await prisma.product.findUnique({
+        where: { id: item.product_id },
+      })
 
-    if (!orderData || orderData.length === 0) {
-      throw new Error("Sipariş oluşturuldu ancak veri döndürülemedi")
-    }
-
-    const order = orderData[0]
-    console.log("Oluşturulan sipariş:", order)
-
-    // Create order items
-    const orderItems = cartItems.map((item) => ({
-      order_id: order.id,
-      product_id: item.product_id,
-      quantity: item.quantity,
-      price: item.price,
-    }))
-
-    const { error: itemsError } = await supabase.from("order_items").insert(orderItems)
-
-    if (itemsError) {
-      console.error("Sipariş öğeleri oluşturulurken hata:", itemsError.message)
-      throw new Error(itemsError.message)
+      if (product) {
+        const newStock = Math.max(0, product.stock - item.quantity)
+        await prisma.product.update({
+          where: { id: item.product_id },
+          data: { stock: newStock },
+        })
+      }
     }
 
     return order
   } catch (error: any) {
-    console.error("Sipariş oluşturulurken hata:", error)
-    throw new Error(error.message || "Sipariş oluşturulurken bir hata oluştu")
+    console.error("Error creating order:", error)
+    throw new Error(error.message || "Error creating order")
   }
 }
 
@@ -302,21 +232,17 @@ export function generateTrackingNumber(): string {
 // Update order status
 export async function updateOrderStatus(orderId: number, status: string): Promise<Order | null> {
   try {
-    const { data, error } = await supabase
-      .from("orders")
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq("id", orderId)
-      .select()
-      .single()
+    const updatedOrder = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status,
+        updated_at: new Date(),
+      },
+    })
 
-    if (error) {
-      console.error(`Sipariş durumu (ID: ${orderId}) güncellenirken hata:`, error.message)
-      throw new Error(error.message)
-    }
-
-    return data
+    return updatedOrder
   } catch (error) {
-    console.error(`Sipariş durumu (ID: ${orderId}) güncellenirken hata:`, error)
+    console.error(`Error updating order status (ID: ${orderId}):`, error)
     return null
   }
 }
@@ -324,16 +250,13 @@ export async function updateOrderStatus(orderId: number, status: string): Promis
 // Get all order numbers (for search functionality)
 export async function getAllOrderNumbers(): Promise<number[]> {
   try {
-    const { data, error } = await supabase.from("orders").select("id")
+    const orders = await prisma.order.findMany({
+      select: { id: true },
+    })
 
-    if (error) {
-      console.error("Sipariş numaraları alınırken hata:", error.message)
-      throw new Error(error.message)
-    }
-
-    return (data || []).map((order) => order.id)
+    return orders.map((order) => order.id)
   } catch (error) {
-    console.error("Sipariş numaraları alınırken hata:", error)
+    console.error("Error fetching order numbers:", error)
     return []
   }
 }

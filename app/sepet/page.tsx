@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { Loader2, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import CartItem from "@/components/cart/cart-item"
@@ -27,6 +28,11 @@ export default function Cart() {
   const accountHolder = getSetting("account_holder") || getSetting("hesap_sahibi") || ""
   const iban = getSetting("iban") || ""
 
+  // WhatsApp bilgileri
+  const whatsappNumber = getSetting("whatsapp_number") || getSetting("whatsapp_numarasi") || ""
+  const defaultMessage =
+    getSetting("whatsapp_message") || getSetting("varsayilan_mesaj") || "Merhaba, sipariş vermek istiyorum."
+
   // Log cart items for debugging
   useEffect(() => {
     if (cartItems.length > 0) {
@@ -42,6 +48,28 @@ export default function Cart() {
 
   const handleCheckout = () => {
     router.push("/siparis")
+  }
+
+  // WhatsApp ile ödeme linki oluştur
+  const getWhatsAppLink = () => {
+    if (!whatsappNumber) return "#"
+
+    // Telefon numarasını formatlama (başında + işareti olmalı)
+    let formattedNumber = whatsappNumber.startsWith("+")
+      ? whatsappNumber
+      : whatsappNumber.startsWith("0")
+        ? "+9" + whatsappNumber
+        : "+90" + whatsappNumber
+
+    // Boşluk, parantez gibi karakterleri temizle
+    formattedNumber = formattedNumber.replace(/[\s()-]/g, "")
+
+    // Mesaj oluştur
+    const message = encodeURIComponent(
+      `${defaultMessage} PTT ile güvenli ödeme yapmak istiyorum. Sepet tutarı: ${total.toLocaleString("tr-TR")} ₺`,
+    )
+
+    return `https://wa.me/${formattedNumber}?text=${message}`
   }
 
   if (isLoading || authLoading) {
@@ -120,10 +148,31 @@ export default function Cart() {
                   </div>
                 </div>
 
-                {/* Checkout Button */}
-                <Button className="w-full" onClick={handleCheckout}>
-                  Siparişi Tamamla
-                </Button>
+                {/* Checkout Buttons */}
+                <div className="space-y-3">
+                  {/* Normal Checkout Button */}
+                  <Button className="w-full" onClick={handleCheckout}>
+                    Siparişi Tamamla
+                  </Button>
+
+                  {/* PTT ile Güvenli Ödeme Butonu */}
+                  <div className="relative text-center">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-gray-300"></span>
+                    </div>
+                    <span className="relative px-2 bg-white text-sm text-gray-500">veya</span>
+                  </div>
+
+                  <a href={getWhatsAppLink()} target="_blank" rel="noopener noreferrer" className="block">
+                    <Button
+                      className="w-full bg-[#ffcc00] hover:bg-[#e6b800] text-black flex items-center justify-center gap-2"
+                      variant="outline"
+                    >
+                      <Image src="/ptt-logo.png" alt="PTT Logo" width={24} height={24} className="rounded-sm" />
+                      PTT ile Güvenli Ödeme Yap
+                    </Button>
+                  </a>
+                </div>
 
                 {/* Banka Bilgileri */}
                 {bankName && accountHolder && iban && (

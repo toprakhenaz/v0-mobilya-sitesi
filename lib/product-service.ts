@@ -1,8 +1,36 @@
-import { supabase } from "./supabase-client"
-import type { Product } from "./supabase"
+import prisma from "./prisma"
 
 // Default image for products without specific images
 const defaultProductImage = "/diverse-products-still-life.png"
+
+// Helper function to parse JSON fields
+function parseJsonField(field: string | null) {
+  if (!field) return null
+  try {
+    return JSON.parse(field)
+  } catch (error) {
+    console.error("Error parsing JSON field:", error)
+    return null
+  }
+}
+
+// Helper function to process product data
+function processProduct(product: any): any {
+  // Parse JSON fields
+  const imageUrls = parseJsonField(product.image_urls) || []
+  const features = parseJsonField(product.features) || []
+  const specifications = parseJsonField(product.specifications) || {}
+
+  // Ensure product has images
+  const images = imageUrls.length > 0 ? imageUrls : [defaultProductImage]
+
+  return {
+    ...product,
+    images,
+    features,
+    specifications,
+  }
+}
 
 // Get all products with optional filtering
 export async function getProducts(
@@ -16,66 +44,70 @@ export async function getProducts(
   limit = 12,
 ) {
   try {
-    let query = supabase.from("products").select("*", { count: "exact" })
+    // Build where clause
+    const where: any = {}
 
-    // Apply category filter
     if (categoryId) {
-      query = query.eq("category_id", categoryId)
+      where.category_id = categoryId
     }
 
-    // Apply price filters
     if (filters?.minPrice !== undefined) {
-      query = query.gte("price", filters.minPrice)
-    }
-    if (filters?.maxPrice !== undefined) {
-      query = query.lte("price", filters.maxPrice)
+      where.price = {
+        ...(where.price || {}),
+        gte: filters.minPrice,
+      }
     }
 
-    // Apply sorting
+    if (filters?.maxPrice !== undefined) {
+      where.price = {
+        ...(where.price || {}),
+        lte: filters.maxPrice,
+      }
+    }
+
+    // Build orderBy
+    let orderBy: any = { created_at: "desc" }
+
     if (filters?.sortBy) {
       switch (filters.sortBy) {
         case "price_asc":
-          query = query.order("price", { ascending: true })
+          orderBy = { price: "asc" }
           break
         case "price_desc":
-          query = query.order("price", { ascending: false })
+          orderBy = { price: "desc" }
           break
         case "newest":
-          query = query.order("created_at", { ascending: false })
+          orderBy = { created_at: "desc" }
           break
         case "popular":
-          // Değişiklik: sales_count yerine id'ye göre sıralama yapıyoruz
-          query = query.order("id", { ascending: false })
+          orderBy = { id: "desc" }
           break
       }
-    } else {
-      // Default sorting
-      query = query.order("created_at", { ascending: false })
     }
 
-    // Apply pagination
-    const from = (page - 1) * limit
-    const to = from + limit - 1
-    query = query.range(from, to)
+    // Calculate pagination
+    const skip = (page - 1) * limit
 
-    const { data, error, count } = await query
+    // Get total count
+    const totalCount = await prisma.product.count({ where })
 
-    if (error) {
-      throw error
-    }
+    // Get products
+    const products = await prisma.product.findMany({
+      where,
+      orderBy,
+      skip,
+      take: limit,
+      include: {
+        category: true,
+      },
+    })
 
-    // Process products to ensure they have images
-    const productsWithImages =
-      data?.map((product) => {
-        // Use image_urls from database if available
-        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
-
-        return { ...product, images }
-      }) || []
+    // Process products
+    const processedProducts = products.map(processProduct)
 
     return {
-      products: productsWithImages,
-      total: count || 0,
+      products: processedProducts,
+      total: totalCount,
     }
   } catch (error) {
     console.error("Error fetching products:", error)
@@ -84,22 +116,20 @@ export async function getProducts(
 }
 
 // Get a single product by ID
-export async function getProductById(id: number): Promise<Product | null> {
+export async function getProductById(id: number): Promise<any | null> {
   try {
-    const { data, error } = await supabase.from("products").select("*").eq("id", id).single()
+    const product = await prisma.product.findUnique({
+      where: { id },
+      include: {
+        category: true,
+      },
+    })
 
-    if (error) {
-      throw error
-    }
-
-    if (!data) {
+    if (!product) {
       return null
     }
 
-    // Use image_urls from database if available
-    const images = data.image_urls && data.image_urls.length > 0 ? data.image_urls : [defaultProductImage]
-
-    return { ...data, images }
+    return processProduct(product)
   } catch (error) {
     console.error("Error fetching product by ID:", error)
     return null
@@ -107,54 +137,61 @@ export async function getProductById(id: number): Promise<Product | null> {
 }
 
 // Get a single product by slug
-export async function getProductBySlug(slug: string): Promise<Product | null> {
+export async function getProductBySlug(slug: string): Promise<any | null> {
   try {
-    const { data, error } = await supabase.from("products").select("*").eq("slug", slug).single()
+    const product = await prisma.product.findUnique({
+      where: { slug },
+      include: {
+        category: true,
+      },
+    })
 
-    if (error) {
-      throw error
-    }
-
-    if (!data) {
+    if (!product) {
       return null
     }
 
-    // Use image_urls from database if available
-    const images = data.image_urls && data.image_urls.length > 0 ? data.image_urls : [defaultProductImage]
-
-    return { ...data, images }
+    return processProduct(product)
   } catch (error) {
     console.error("Error fetching product by slug:", error)
     return null
   }
 }
 
+// Get all categories
 export async function getCategories() {
   try {
-    const { data, error } = await supabase.from("categories").select("*").order("name")
+    const categories = await prisma.category.findMany({
+      orderBy: {
+        name: "asc",
+      },
+    })
 
-    if (error) {
-      throw error
-    }
-
-    return data as any[]
+    // Add default image URLs if missing
+    return categories.map((category) => {
+      if (!category.image_url) {
+        return {
+          ...category,
+          image_url: `/placeholder.svg?height=300&width=300&query=${encodeURIComponent(
+            (category.name || "furniture") + " furniture",
+          )}`,
+        }
+      }
+      return category
+    })
   } catch (error) {
     console.error("Error fetching categories:", error)
     return []
   }
 }
 
+// Get a category by slug
 export async function getCategoryBySlug(slug: string) {
   try {
-    // Fix: Use .limit(1) and then access the first item instead of .single()
-    const { data, error } = await supabase.from("categories").select("*").eq("slug", slug).limit(1)
+    const category = await prisma.category.findUnique({
+      where: { slug },
+    })
 
-    if (error) {
-      throw error
-    }
-
-    // Return the first item if it exists, otherwise null
-    return data && data.length > 0 ? (data[0] as any) : null
+    return category
   } catch (error) {
     console.error("Error fetching category:", error)
     return null
@@ -162,97 +199,65 @@ export async function getCategoryBySlug(slug: string) {
 }
 
 // Get featured products
-export async function getFeaturedProducts(limit = 8): Promise<Product[]> {
+export async function getFeaturedProducts(limit = 8): Promise<any[]> {
   try {
-    // Instead of using is_featured column which doesn't exist,
-    // we'll use the newest products as featured
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(limit)
+    const products = await prisma.product.findMany({
+      orderBy: {
+        created_at: "desc",
+      },
+      take: limit,
+    })
 
-    if (error) {
-      throw error
-    }
-
-    // Process products to ensure they have images
-    const productsWithImages =
-      data?.map((product) => {
-        // Use image_urls from database if available
-        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
-
-        return { ...product, images }
-      }) || []
-
-    return productsWithImages
+    return products.map(processProduct)
   } catch (error) {
     console.error("Error fetching featured products:", error)
-    return [] // Return empty array instead of throwing error
+    return []
   }
 }
 
 // Get promotional products
-export async function getPromotionalProducts(limit = 8): Promise<Product[]> {
+export async function getPromotionalProducts(limit = 8): Promise<any[]> {
   try {
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .not("discount_percentage", "is", null)
-      .gt("discount_percentage", 0)
-      .order("discount_percentage", { ascending: false })
-      .limit(limit)
+    const products = await prisma.product.findMany({
+      where: {
+        discount_percentage: {
+          gt: 0,
+        },
+      },
+      orderBy: {
+        discount_percentage: "desc",
+      },
+      take: limit,
+    })
 
-    if (error) {
-      throw error
-    }
-
-    // Process products to ensure they have images
-    const productsWithImages =
-      data?.map((product) => {
-        // Use image_urls from database if available
-        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
-
-        return { ...product, images }
-      }) || []
-
-    return productsWithImages
+    return products.map(processProduct)
   } catch (error) {
     console.error("Error fetching promotional products:", error)
-    throw error
+    return []
   }
 }
 
 // Get related products
-export async function getRelatedProducts(productId: number, categoryId: number, limit = 4): Promise<Product[]> {
+export async function getRelatedProducts(productId: number, categoryId: number, limit = 4): Promise<any[]> {
   try {
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .eq("category_id", categoryId)
-      .neq("id", productId)
-      .limit(limit)
+    const products = await prisma.product.findMany({
+      where: {
+        category_id: categoryId,
+        id: {
+          not: productId,
+        },
+      },
+      take: limit,
+    })
 
-    if (error) {
-      throw error
-    }
-
-    // Process products to ensure they have images
-    const productsWithImages =
-      data?.map((product) => {
-        // Use image_urls from database if available
-        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
-
-        return { ...product, images }
-      }) || []
-
-    return productsWithImages
+    return products.map(processProduct)
   } catch (error) {
     console.error("Error fetching related products:", error)
-    throw error
+    return []
   }
 }
 
+// Search products
 export async function searchProducts(
   query: string,
   filters?: {
@@ -264,65 +269,68 @@ export async function searchProducts(
   limit = 24,
 ) {
   try {
-    // Start with the search query
-    let dbQuery = supabase
-      .from("products")
-      .select("*", { count: "exact" })
-      .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
+    // Build where clause
+    const where: any = {
+      OR: [
+        { name: { contains: query, mode: "insensitive" } },
+        { description: { contains: query, mode: "insensitive" } },
+      ],
+    }
 
-    // Apply price filters
     if (filters?.minPrice !== undefined) {
-      dbQuery = dbQuery.gte("price", filters.minPrice)
-    }
-    if (filters?.maxPrice !== undefined) {
-      dbQuery = dbQuery.lte("price", filters.maxPrice)
+      where.price = {
+        ...(where.price || {}),
+        gte: filters.minPrice,
+      }
     }
 
-    // Apply sorting
+    if (filters?.maxPrice !== undefined) {
+      where.price = {
+        ...(where.price || {}),
+        lte: filters.maxPrice,
+      }
+    }
+
+    // Build orderBy
+    let orderBy: any = { created_at: "desc" }
+
     if (filters?.sortBy) {
       switch (filters.sortBy) {
         case "price_asc":
-          dbQuery = dbQuery.order("price", { ascending: true })
+          orderBy = { price: "asc" }
           break
         case "price_desc":
-          dbQuery = dbQuery.order("price", { ascending: false })
+          orderBy = { price: "desc" }
           break
         case "newest":
-          dbQuery = dbQuery.order("created_at", { ascending: false })
+          orderBy = { created_at: "desc" }
           break
         case "popular":
-          // Değişiklik: sales_count yerine id'ye göre sıralama yapıyoruz
-          dbQuery = dbQuery.order("id", { ascending: false })
+          orderBy = { id: "desc" }
           break
       }
-    } else {
-      // Default sorting
-      dbQuery = dbQuery.order("created_at", { ascending: false })
     }
 
-    // Apply pagination
-    const from = (page - 1) * limit
-    const to = from + limit - 1
-    dbQuery = dbQuery.range(from, to)
+    // Calculate pagination
+    const skip = (page - 1) * limit
 
-    const { data, count, error } = await dbQuery
+    // Get total count
+    const totalCount = await prisma.product.count({ where })
 
-    if (error) {
-      throw error
-    }
+    // Get products
+    const products = await prisma.product.findMany({
+      where,
+      orderBy,
+      skip,
+      take: limit,
+    })
 
-    // Process products to ensure they have images
-    const productsWithImages =
-      data?.map((product) => {
-        // Use image_urls from database if available
-        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
-
-        return { ...product, images }
-      }) || []
+    // Process products
+    const processedProducts = products.map(processProduct)
 
     return {
-      products: productsWithImages,
-      total: count || 0,
+      products: processedProducts,
+      total: totalCount,
     }
   } catch (error) {
     console.error("Error searching products:", error)
@@ -331,30 +339,21 @@ export async function searchProducts(
 }
 
 // Get sale products
-export async function getSaleProducts(limit = 8): Promise<Product[]> {
+export async function getSaleProducts(limit = 8): Promise<any[]> {
   try {
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .not("discount_percentage", "is", null)
-      .gt("discount_percentage", 0)
-      .order("discount_percentage", { ascending: false })
-      .limit(limit)
+    const products = await prisma.product.findMany({
+      where: {
+        discount_percentage: {
+          gt: 0,
+        },
+      },
+      orderBy: {
+        discount_percentage: "desc",
+      },
+      take: limit,
+    })
 
-    if (error) {
-      throw error
-    }
-
-    // Process products to ensure they have images
-    const productsWithImages =
-      data?.map((product) => {
-        // Use image_urls from database if available
-        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
-
-        return { ...product, images }
-      }) || []
-
-    return productsWithImages
+    return products.map(processProduct)
   } catch (error) {
     console.error("Error fetching sale products:", error)
     return []
@@ -362,29 +361,19 @@ export async function getSaleProducts(limit = 8): Promise<Product[]> {
 }
 
 // Get new products
-export async function getNewProducts(limit = 24): Promise<Product[]> {
+export async function getNewProducts(limit = 24): Promise<any[]> {
   try {
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .eq("is_new", true)
-      .order("created_at", { ascending: false })
-      .limit(limit)
+    const products = await prisma.product.findMany({
+      where: {
+        is_new: true,
+      },
+      orderBy: {
+        created_at: "desc",
+      },
+      take: limit,
+    })
 
-    if (error) {
-      throw error
-    }
-
-    // Process products to ensure they have images
-    const productsWithImages =
-      data?.map((product) => {
-        // Use image_urls from database if available
-        const images = product.image_urls && product.image_urls.length > 0 ? product.image_urls : [defaultProductImage]
-
-        return { ...product, images }
-      }) || []
-
-    return productsWithImages
+    return products.map(processProduct)
   } catch (error) {
     console.error("Error fetching new products:", error)
     return []
@@ -394,11 +383,12 @@ export async function getNewProducts(limit = 24): Promise<Product[]> {
 // Update product images
 export async function updateProductImages(productId: number, imageUrls: string[]): Promise<boolean> {
   try {
-    const { error } = await supabase.from("products").update({ image_urls: imageUrls }).eq("id", productId)
-
-    if (error) {
-      throw error
-    }
+    await prisma.product.update({
+      where: { id: productId },
+      data: {
+        image_urls: JSON.stringify(imageUrls),
+      },
+    })
 
     return true
   } catch (error) {
@@ -411,11 +401,12 @@ export async function updateProductImages(productId: number, imageUrls: string[]
 export async function updateAllProductImages(): Promise<boolean> {
   try {
     // Get all products
-    const { data: products, error } = await supabase.from("products").select("id, slug")
-
-    if (error) {
-      throw error
-    }
+    const products = await prisma.product.findMany({
+      select: {
+        id: true,
+        slug: true,
+      },
+    })
 
     // Product image mapping based on slug patterns
     const imagePatterns = [
@@ -458,7 +449,12 @@ export async function updateAllProductImages(): Promise<boolean> {
       }
 
       // Update product with matched images
-      await supabase.from("products").update({ image_urls: matchedImages }).eq("id", product.id)
+      await prisma.product.update({
+        where: { id: product.id },
+        data: {
+          image_urls: JSON.stringify(matchedImages),
+        },
+      })
     }
 
     return true

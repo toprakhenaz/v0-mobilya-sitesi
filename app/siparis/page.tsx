@@ -35,6 +35,7 @@ export default function Checkout() {
   const [selectedAddressId, setSelectedAddressId] = useState<number | "new" | "guest">(0)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isProcessingOrder, setIsProcessingOrder] = useState(false) // New state for order processing
   const [isGuest, setIsGuest] = useState(false)
   const [guestEmail, setGuestEmail] = useState("")
   const [acceptTerms, setAcceptTerms] = useState(false)
@@ -182,6 +183,7 @@ export default function Checkout() {
     }
 
     setIsSubmitting(true)
+    setIsProcessingOrder(true) // Show processing overlay
 
     try {
       let shippingAddress: Address
@@ -195,6 +197,7 @@ export default function Checkout() {
             variant: "destructive",
           })
           setIsSubmitting(false)
+          setIsProcessingOrder(false)
           return
         }
 
@@ -311,8 +314,10 @@ export default function Checkout() {
         description: error.message || "Sipariş oluşturulurken bir hata oluştu.",
         variant: "destructive",
       })
+      setIsProcessingOrder(false) // Hide processing overlay on error
     } finally {
       setIsSubmitting(false)
+      // Note: We don't set isProcessingOrder to false here because we want to keep showing the overlay until redirect
     }
   }
 
@@ -325,7 +330,21 @@ export default function Checkout() {
   }
 
   return (
-    <div className="py-6">
+    <div className="py-6 relative">
+      {/* Processing Order Overlay */}
+      {isProcessingOrder && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-xl text-center max-w-md">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+            <h3 className="text-xl font-bold mb-2">Siparişiniz İşleniyor</h3>
+            <p className="text-gray-600 mb-4">
+              Lütfen bekleyin, siparişiniz oluşturuluyor. Bu işlem birkaç saniye sürebilir.
+            </p>
+            <p className="text-sm text-gray-500">Sayfadan ayrılmayın veya tarayıcınızı kapatmayın.</p>
+          </div>
+        </div>
+      )}
+
       <div className="container mx-auto px-4">
         <h1 className="text-2xl font-bold mb-6">Sipariş Tamamla</h1>
 

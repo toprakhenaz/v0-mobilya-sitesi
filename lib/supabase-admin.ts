@@ -2,6 +2,7 @@ import { createClient as createClientBase } from "@supabase/supabase-js"
 
 // Admin yetkisiyle Supabase client oluşturan fonksiyon
 export function createClient() {
+  // .env dosyasından değişkenleri al
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
 

@@ -3,20 +3,27 @@
 import { useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { CheckCircle, Loader2, Copy, Package } from "lucide-react"
+import { CheckCircle, Loader2, Copy, Package, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/auth-context"
 import { toast } from "@/components/ui/use-toast"
+import { useSiteSettings } from "@/contexts/site-settings-context"
 
 export default function OrderConfirmation() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { user } = useAuth()
+  const { getSetting } = useSiteSettings()
   const orderId = searchParams.get("order_id")
 
   const [order, setOrder] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [loadingStage, setLoadingStage] = useState("Sipariş bilgileri alınıyor...")
   const [copied, setCopied] = useState(false)
+
+  // Get WhatsApp information from site settings
+  const whatsappNumber = getSetting("whatsapp_number")
+  const defaultMessage = getSetting("whatsapp_message") || "Merhaba, sipariş numaramla ilgili bilgi almak istiyorum:"
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -27,10 +34,12 @@ export default function OrderConfirmation() {
       }
 
       try {
+        setLoadingStage("Sipariş detayları alınıyor...")
         console.log("Sipariş detayları alınıyor:", orderId)
         // Fetch order details from API
         const response = await fetch(`/api/orders/${orderId}`)
 
+        setLoadingStage("Sipariş bilgileri işleniyor...")
         console.log("API yanıtı:", response.status, response.statusText)
 
         if (!response.ok) {
@@ -46,7 +55,12 @@ export default function OrderConfirmation() {
           throw new Error("Sipariş bulunamadı")
         }
 
-        setOrder(data.order)
+        setLoadingStage("Sayfa hazırlanıyor...")
+        // Add a small delay to show the final loading message
+        setTimeout(() => {
+          setOrder(data.order)
+          setIsLoading(false)
+        }, 500)
       } catch (error) {
         console.error("Error fetching order:", error)
         toast({
@@ -54,7 +68,6 @@ export default function OrderConfirmation() {
           description: "Sipariş detayları alınamadı. Lütfen daha sonra tekrar deneyin.",
           variant: "destructive",
         })
-      } finally {
         setIsLoading(false)
       }
     }
@@ -75,10 +88,47 @@ export default function OrderConfirmation() {
     }
   }
 
+  const getWhatsAppLink = () => {
+    if (!whatsappNumber) return "#"
+
+    // Format the WhatsApp number (remove spaces, dashes, etc.)
+    const formattedNumber = whatsappNumber.replace(/\D/g, "")
+
+    // Create the message with the order tracking number
+    const message = `${defaultMessage} ${order?.tracking_number || order?.id || ""}`
+
+    // Create the WhatsApp link
+    return `https://wa.me/${formattedNumber}?text=${encodeURIComponent(message)}`
+  }
+
   if (isLoading) {
     return (
-      <div className="py-12 flex justify-center items-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-[60vh] flex flex-col justify-center items-center p-4">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Siparişiniz Hazırlanıyor</h2>
+          <p className="text-gray-600 mb-6">{loadingStage}</p>
+          <div className="max-w-md mx-auto bg-blue-50 border border-blue-100 rounded-lg p-4 text-blue-700 text-sm">
+            Lütfen sayfayı kapatmayın veya yenilemeyin. Siparişiniz işleniyor...
+          </div>
+
+          <div className="mt-8 flex justify-center">
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded-full bg-green-500 mr-3"></div>
+                <span className="text-green-600 font-medium">Sipariş alındı</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded-full bg-green-500 mr-3"></div>
+                <span className="text-green-600 font-medium">Ödeme onaylandı</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded-full bg-blue-500 animate-pulse mr-3"></div>
+                <span className="font-medium">Sipariş detayları hazırlanıyor</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -118,13 +168,24 @@ export default function OrderConfirmation() {
                 </div>
               </div>
 
-              <Link href={`/siparis-takibi?order_id=${order.id}`} className="w-full max-w-md">
-                <Button className="w-full flex items-center justify-center gap-2 mb-4">
-                  <Package className="h-5 w-5" /> Siparişimi Takip Et
-                </Button>
-              </Link>
+              <div className="w-full max-w-md space-y-3">
+                <Link href={`/siparis-takibi?order_id=${order.id}`} className="w-full">
+                  <Button className="w-full flex items-center justify-center gap-2">
+                    <Package className="h-5 w-5" /> Siparişimi Takip Et
+                  </Button>
+                </Link>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 max-w-md text-left">
+                <a href={getWhatsAppLink()} target="_blank" rel="noopener noreferrer" className="w-full">
+                  <Button
+                    variant="secondary"
+                    className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <MessageCircle className="h-5 w-5" /> Müşteri Temsilcisi ile İletişime Geç
+                  </Button>
+                </a>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 max-w-md text-left mt-4">
                 <h5 className="text-blue-800 font-medium mb-1">Siparişinizi takip edebilirsiniz</h5>
                 <p className="text-blue-700 text-sm">
                   Yukarıdaki sipariş takip numaranız ile istediğiniz zaman siparişinizin durumunu kontrol edebilirsiniz.
