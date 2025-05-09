@@ -1,5 +1,4 @@
 import { supabase } from "./supabase-client"
-import type { Product, Category } from "./supabase"
 
 // Define AdminUser type
 export type AdminUser = {
@@ -55,6 +54,35 @@ export type OrderItem = {
   product_id: number
   quantity: number
   price: number
+}
+
+// Kategori tipi
+export type Category = {
+  id: number
+  name: string
+  slug: string
+  description?: string
+  image_url?: string
+}
+
+// Ürün tipi
+export type Product = {
+  id: number
+  name: string
+  slug: string
+  description: string
+  price: number
+  original_price?: number
+  discount_percentage?: number
+  is_new?: boolean
+  is_on_sale?: boolean
+  stock: number
+  category_id: number
+  images: string[] // Client-side representation of images
+  image_urls?: string[] // Database column for image URLs
+  features?: string[]
+  specifications?: Record<string, string>
+  created_at: string
 }
 
 // Admin login function
@@ -153,12 +181,22 @@ export async function deleteCategory(id: number): Promise<void> {
 
 // Get all products with optional filtering
 export async function getProducts(
+  categoryId?: number,
+  filters?: {
+    minPrice?: number
+    maxPrice?: number
+    sortBy?: "price_asc" | "price_desc" | "newest" | "popular"
+  },
   page = 1,
   itemsPerPage = 10,
   searchTerm = "",
 ): Promise<{ products: Product[]; totalCount: number }> {
   try {
     let query = supabase.from("products").select(`*, category:categories(name)`, { count: "exact" })
+
+    if (categoryId) {
+      query = query.eq("category_id", categoryId)
+    }
 
     if (searchTerm) {
       query = query.ilike("name", `%${searchTerm}%`)
@@ -253,98 +291,21 @@ export async function deleteProduct(id: number): Promise<void> {
   }
 }
 
-// Delete a product image
-export async function deleteProductImage(imageId: number): Promise<void> {
-  try {
-    const { error } = await supabase.from("product_images").delete().eq("id", imageId)
-
-    if (error) {
-      console.error(`Resim (ID: ${imageId}) silinirken hata:`, error.message)
-      throw new Error(error.message)
-    }
-  } catch (error) {
-    console.error(`Resim (ID: ${imageId}) silinirken hata:`, error)
-    throw error
-  }
-}
-
-// Get order details
-export async function getOrderDetails(orderId: number): Promise<any | null> {
-  try {
-    const { data, error } = await supabase
-      .from("orders")
-      .select(`*, order_items(*, product:products(name))`)
-      .eq("id", orderId)
-      .single()
-
-    if (error) {
-      console.error(`Sipariş detayları (ID: ${orderId}) alınırken hata:`, error.message)
-      return null
-    }
-
-    return data
-  } catch (error) {
-    console.error(`Sipariş detayları (ID: ${orderId}) alınırken hata:`, error)
-    return null
-  }
-}
-
-// Update order status
-export async function updateOrderStatus(orderId: number, status: string): Promise<boolean> {
-  try {
-    const { error } = await supabase
-      .from("orders")
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq("id", orderId)
-
-    if (error) {
-      console.error(`Sipariş durumu (ID: ${orderId}) güncellenirken hata:`, error.message)
-      return false
-    }
-
-    return true
-  } catch (error) {
-    console.error(`Sipariş durumu (ID: ${orderId}) güncellenirken hata:`, error)
-    return false
-  }
-}
-
 // Get site settings with fallback values
 export async function getSiteSettings(): Promise<any[]> {
   try {
-    // Check if Supabase URL is available
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
-      console.warn("Supabase URL veya Anon Key bulunamadı, varsayılan ayarlar kullanılıyor")
-      return getDefaultSettings()
-    }
-
     const { data, error } = await supabase.from("site_settings").select("*")
 
     if (error) {
       console.error("Site ayarları alınırken hata:", error.message)
-      return getDefaultSettings()
+      return []
     }
 
-    return data && data.length > 0 ? data : getDefaultSettings()
+    return data || []
   } catch (error) {
     console.error("Site ayarları alınırken hata:", error)
-    return getDefaultSettings()
+    return []
   }
-}
-
-// Default settings as fallback
-function getDefaultSettings() {
-  return [
-    { key: "site_name", value: "Mobilya Sitesi" },
-    { key: "site_description", value: "Kaliteli mobilya ürünleri" },
-    { key: "contact_email", value: "info@mobilyasitesi.com" },
-    { key: "contact_phone", value: "+90 555 123 4567" },
-    { key: "address", value: "İstanbul, Türkiye" },
-    { key: "shipping_fee", value: "50" },
-    { key: "free_shipping_threshold", value: "1000" },
-    { key: "whatsapp_number", value: "+90 555 123 4567" },
-    { key: "whatsapp_message", value: "Merhaba, ürünleriniz hakkında bilgi almak istiyorum." },
-  ]
 }
 
 // Update multiple settings
@@ -453,7 +414,7 @@ export async function updateHeroSlideOrder(slides: { id: number; order_index: nu
   }
 }
 
-// Get all users
+// Get all users with pagination and search
 export async function getUsers(
   page = 1,
   itemsPerPage = 10,
@@ -463,7 +424,7 @@ export async function getUsers(
     let query = supabase.from("users").select("*", { count: "exact" })
 
     if (searchTerm) {
-      query = query.ilike("email", `%${searchTerm}%`)
+      query = query.or(`email.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%`)
     }
 
     const from = (page - 1) * itemsPerPage
@@ -483,13 +444,13 @@ export async function getUsers(
   }
 }
 
-// Get all orders with optional filtering
+// Get all orders with pagination, filtering and search
 export async function getOrders(
   page = 1,
   itemsPerPage = 10,
   statusFilter?: string,
   searchTerm?: string,
-): Promise<{ orders: any[]; totalCount: number }> {
+): Promise<{ orders: Order[]; totalCount: number }> {
   try {
     let query = supabase.from("orders").select("*", { count: "exact" })
 
@@ -498,7 +459,9 @@ export async function getOrders(
     }
 
     if (searchTerm) {
-      query = query.ilike("id", `%${searchTerm}%`)
+      query = query.or(
+        `id::text.ilike.%${searchTerm}%,guest_email.ilike.%${searchTerm}%,tracking_number.ilike.%${searchTerm}%`,
+      )
     }
 
     const from = (page - 1) * itemsPerPage
@@ -511,9 +474,192 @@ export async function getOrders(
       throw new Error(error.message)
     }
 
-    return { orders: data || [], totalCount: count || 0 }
+    return { orders: (data as Order[]) || [], totalCount: count || 0 }
   } catch (error) {
     console.error("Siparişler alınırken hata:", error)
     return { orders: [], totalCount: 0 }
+  }
+}
+
+// Get order details including items
+export async function getOrderDetails(orderId: number): Promise<any | null> {
+  try {
+    const { data, error } = await supabase
+      .from("orders")
+      .select(`*, order_items(*, product:products(name, price, image_urls))`)
+      .eq("id", orderId)
+      .single()
+
+    if (error) {
+      console.error(`Sipariş detayları (ID: ${orderId}) alınırken hata:`, error.message)
+      return null
+    }
+
+    return data
+  } catch (error) {
+    console.error(`Sipariş detayları (ID: ${orderId}) alınırken hata:`, error)
+    return null
+  }
+}
+
+// Update order status
+export async function updateOrderStatus(orderId: number, status: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from("orders")
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", orderId)
+
+    if (error) {
+      console.error(`Sipariş durumu (ID: ${orderId}) güncellenirken hata:`, error.message)
+      return false
+    }
+
+    return true
+  } catch (error) {
+    console.error(`Sipariş durumu (ID: ${orderId}) güncellenirken hata:`, error)
+    return false
+  }
+}
+
+// Delete a product image
+export async function deleteProductImage(imageId: number): Promise<void> {
+  try {
+    const { error } = await supabase.from("product_images").delete().eq("id", imageId)
+
+    if (error) {
+      console.error(`Resim (ID: ${imageId}) silinirken hata:`, error.message)
+      throw new Error(error.message)
+    }
+  } catch (error) {
+    console.error(`Resim (ID: ${imageId}) silinirken hata:`, error)
+    throw error
+  }
+}
+
+// Get product images
+export async function getProductImages(productId: number): Promise<ProductImage[]> {
+  try {
+    const { data, error } = await supabase
+      .from("product_images")
+      .select("*")
+      .eq("product_id", productId)
+      .order("is_primary", { ascending: false })
+
+    if (error) {
+      console.error(`Ürün resimleri (Ürün ID: ${productId}) alınırken hata:`, error.message)
+      throw new Error(error.message)
+    }
+
+    return (data as ProductImage[]) || []
+  } catch (error) {
+    console.error(`Ürün resimleri (Ürün ID: ${productId}) alınırken hata:`, error)
+    return []
+  }
+}
+
+// Set primary image
+export async function setPrimaryImage(imageId: number, productId: number): Promise<boolean> {
+  try {
+    // First, set all images of this product to non-primary
+    const { error: resetError } = await supabase
+      .from("product_images")
+      .update({ is_primary: false })
+      .eq("product_id", productId)
+
+    if (resetError) {
+      console.error(`Ürün resimleri (Ürün ID: ${productId}) güncellenirken hata:`, resetError.message)
+      throw new Error(resetError.message)
+    }
+
+    // Then, set the selected image as primary
+    const { error } = await supabase.from("product_images").update({ is_primary: true }).eq("id", imageId)
+
+    if (error) {
+      console.error(`Ana resim (ID: ${imageId}) ayarlanırken hata:`, error.message)
+      throw new Error(error.message)
+    }
+
+    return true
+  } catch (error) {
+    console.error(`Ana resim (ID: ${imageId}) ayarlanırken hata:`, error)
+    return false
+  }
+}
+
+// Add product image
+export async function addProductImage(productId: number, url: string, isPrimary = false): Promise<ProductImage | null> {
+  try {
+    // If this is the primary image, reset other images first
+    if (isPrimary) {
+      const { error: resetError } = await supabase
+        .from("product_images")
+        .update({ is_primary: false })
+        .eq("product_id", productId)
+
+      if (resetError) {
+        console.error(`Ürün resimleri (Ürün ID: ${productId}) güncellenirken hata:`, resetError.message)
+        throw new Error(resetError.message)
+      }
+    }
+
+    // Add the new image
+    const { data, error } = await supabase
+      .from("product_images")
+      .insert([
+        {
+          product_id: productId,
+          url,
+          is_primary: isPrimary,
+        },
+      ])
+      .select()
+      .single()
+
+    if (error) {
+      console.error(`Ürün resmi eklenirken hata:`, error.message)
+      throw new Error(error.message)
+    }
+
+    // Update the product's image_urls array
+    await updateProductImageUrls(productId)
+
+    return data as ProductImage
+  } catch (error) {
+    console.error(`Ürün resmi eklenirken hata:`, error)
+    return null
+  }
+}
+
+// Update product image_urls field based on product_images table
+export async function updateProductImageUrls(productId: number): Promise<boolean> {
+  try {
+    // Get all images for this product
+    const { data: images, error: fetchError } = await supabase
+      .from("product_images")
+      .select("url, is_primary")
+      .eq("product_id", productId)
+      .order("is_primary", { ascending: false })
+
+    if (fetchError) {
+      console.error(`Ürün resimleri (Ürün ID: ${productId}) alınırken hata:`, fetchError.message)
+      throw new Error(fetchError.message)
+    }
+
+    // Extract URLs
+    const imageUrls = images.map((img) => img.url)
+
+    // Update the product
+    const { error: updateError } = await supabase.from("products").update({ image_urls: imageUrls }).eq("id", productId)
+
+    if (updateError) {
+      console.error(`Ürün (ID: ${productId}) resim URL'leri güncellenirken hata:`, updateError.message)
+      throw new Error(updateError.message)
+    }
+
+    return true
+  } catch (error) {
+    console.error(`Ürün (ID: ${productId}) resim URL'leri güncellenirken hata:`, error)
+    return false
   }
 }

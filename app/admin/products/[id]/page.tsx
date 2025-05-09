@@ -24,14 +24,7 @@ import {
 import { Loader2, Save, ArrowLeft, Trash2, Upload, X, ImageIcon, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import {
-  getCategories,
-  getProduct,
-  updateProduct,
-  deleteProduct,
-  deleteProductImage,
-  createProduct,
-} from "@/lib/admin-service"
+import { getCategories, getProduct, updateProduct, deleteProduct, createProduct } from "@/lib/admin-service"
 import type { Category, Product, ProductImage } from "@/lib/admin-service"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
@@ -206,13 +199,23 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     setTempImagePreviews((prev) => prev.filter((_, i) => i !== index))
   }
 
+  // uploadProductImages fonksiyonunu güncelle
   const uploadProductImages = async (productId: number, files: File[]): Promise<boolean> => {
     setUploadError(null)
     try {
+      // İlk resmi primary olarak işaretle
+      let isFirstImage = true
+
       for (const file of files) {
         const formData = new FormData()
         formData.append("productId", productId.toString())
         formData.append("image", file)
+
+        // İlk resmi primary olarak işaretle
+        if (isFirstImage) {
+          formData.append("isPrimary", "true")
+          isFirstImage = false
+        }
 
         const response = await fetch("/api/admin/upload-product-image", {
           method: "POST",
@@ -348,24 +351,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     }
   }
 
-  const handleDeleteImage = async (imageId: number) => {
-    try {
-      await deleteProductImage(imageId)
-      setImages(images.filter((img) => img.id !== imageId))
-      toast({
-        title: "Başarılı",
-        description: "Resim başarıyla silindi.",
-      })
-    } catch (error) {
-      console.error("Resim silinirken hata:", error)
-      toast({
-        variant: "destructive",
-        title: "Hata",
-        description: "Resim silinirken bir hata oluştu.",
-      })
-    }
-  }
-
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setUploadError(null)
 
@@ -380,6 +365,11 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     const formData = new FormData()
     formData.append("productId", productId.toString())
     formData.append("image", files[0])
+
+    // Eğer hiç resim yoksa, bu resmi primary yap
+    if (images.length === 0) {
+      formData.append("isPrimary", "true")
+    }
 
     try {
       const response = await fetch("/api/admin/upload-product-image", {
@@ -401,7 +391,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         console.warn("Image upload note:", data.note)
         toast({
           title: "Bilgi",
-          description: "Resim alternatif yöntemle kaydedildi. Bazı özellikler sınırlı olabilir.",
+          description: data.note,
         })
       } else {
         toast({
@@ -422,8 +412,25 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
   const handleSetPrimaryImage = async (imageId: number) => {
     try {
-      // API çağrısı yapılabilir
-      // Şimdilik sadece UI'ı güncelliyoruz
+      // API çağrısı yap
+      const response = await fetch(`/api/admin/set-primary-image`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          imageId,
+          productId,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Ana resim güncellenirken bir hata oluştu")
+      }
+
+      // UI'ı güncelle
       const updatedImages = images.map((img) => ({
         ...img,
         is_primary: img.id === imageId,
@@ -440,6 +447,40 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         variant: "destructive",
         title: "Hata",
         description: "Ana resim güncellenirken bir hata oluştu.",
+      })
+    }
+  }
+
+  const handleDeleteImage = async (imageId: number) => {
+    try {
+      const response = await fetch(`/api/admin/delete-product-image`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          imageId,
+          productId,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Resim silinirken bir hata oluştu")
+      }
+
+      setImages(images.filter((img) => img.id !== imageId))
+      toast({
+        title: "Başarılı",
+        description: "Resim başarıyla silindi.",
+      })
+    } catch (error) {
+      console.error("Resim silinirken hata:", error)
+      toast({
+        variant: "destructive",
+        title: "Hata",
+        description: "Resim silinirken bir hata oluştu.",
       })
     }
   }
