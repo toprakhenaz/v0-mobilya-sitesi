@@ -13,7 +13,7 @@ export default function PrivacyPolicy() {
 
             <h2 className="text-xl font-semibold mt-6 mb-3">1. Giriş</h2>
             <p className="mb-4">
-              Divona Home ("biz", "bizim" veya "şirketimiz") olarak, web sitemizi ziyaret ettiğinizde veya
+              Divona Garden ("biz", "bizim" veya "şirketimiz") olarak, web sitemizi ziyaret ettiğinizde veya
               hizmetlerimizi kullandığınızda gizliliğinize saygı duyuyoruz. Bu Gizlilik Politikası, kişisel
               bilgilerinizi nasıl topladığımızı, kullandığımızı, paylaştığımızı ve koruduğumuzu açıklar.
             </p>
@@ -75,7 +75,7 @@ export default function PrivacyPolicy() {
             <h2 className="text-xl font-semibold mt-6 mb-3">9. İletişim</h2>
             <p className="mb-4">
               Bu Gizlilik Politikası hakkında sorularınız veya endişeleriniz varsa, lütfen{" "}
-              <strong>info@divonahome.com</strong> adresinden bizimle iletişime geçin.
+              <strong>info@divonagarden.com</strong> adresinden bizimle iletişime geçin.
             </p>
           </div>
 

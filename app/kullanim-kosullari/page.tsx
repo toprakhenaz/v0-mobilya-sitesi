@@ -13,7 +13,7 @@ export default function TermsOfService() {
 
             <h2 className="text-xl font-semibold mt-6 mb-3">1. Kabul Edilen Şartlar</h2>
             <p className="mb-4">
-              Divona Home web sitesine ("Site") erişerek veya kullanarak, bu Kullanım Koşullarını ("Koşullar") kabul
+              Divona Garden web sitesine ("Site") erişerek veya kullanarak, bu Kullanım Koşullarını ("Koşullar") kabul
               etmiş olursunuz. Bu Koşulları kabul etmiyorsanız, lütfen Siteyi kullanmayın.
             </p>
 
@@ -81,7 +81,7 @@ export default function TermsOfService() {
             <h2 className="text-xl font-semibold mt-6 mb-3">11. İletişim</h2>
             <p className="mb-4">
               Bu Kullanım Koşulları hakkında sorularınız veya endişeleriniz varsa, lütfen{" "}
-              <strong>info@divonahome.com</strong> adresinden bizimle iletişime geçin.
+              <strong>info@divonagarden.com</strong> adresinden bizimle iletişime geçin.
             </p>
           </div>
 

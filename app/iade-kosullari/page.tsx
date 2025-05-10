@@ -31,7 +31,7 @@ export default function ReturnPolicy() {
             <p className="mb-2">İade işlemi için aşağıdaki adımları izleyin:</p>
             <ol className="list-decimal pl-6 mb-4">
               <li>
-                İade talebinizi <strong>info@divonahome.com</strong> adresine e-posta göndererek veya müşteri
+                İade talebinizi <strong>info@divonagarden.com</strong> adresine e-posta göndererek veya müşteri
                 hizmetlerimizi arayarak bildirin
               </li>
               <li>E-postanızda sipariş numaranızı, iade etmek istediğiniz ürünleri ve iade nedeninizi belirtin</li>
@@ -55,7 +55,7 @@ export default function ReturnPolicy() {
             <h2 className="text-xl font-semibold mt-6 mb-3">6. Hasarlı veya Kusurlu Ürünler</h2>
             <p className="mb-4">
               Ürünü teslim aldığınızda hasarlı veya kusurlu olduğunu fark ederseniz, lütfen 24 saat içinde müşteri
-              hizmetlerimize bildirin. Hasarlı ürünlerin fotoğraflarını çekerek <strong>info@divonahome.com</strong>{" "}
+              hizmetlerimize bildirin. Hasarlı ürünlerin fotoğraflarını çekerek <strong>info@divonagarden.com</strong>{" "}
               adresine göndermeniz, işlemin hızlandırılmasına yardımcı olacaktır.
             </p>
 
@@ -67,7 +67,7 @@ export default function ReturnPolicy() {
 
             <h2 className="text-xl font-semibold mt-6 mb-3">8. İletişim</h2>
             <p className="mb-4">
-              İade ve değişim işlemleri hakkında sorularınız için <strong>info@divonahome.com</strong> adresinden veya
+              İade ve değişim işlemleri hakkında sorularınız için <strong>info@divonagarden.com</strong> adresinden veya
               müşteri hizmetleri numaramızdan bizimle iletişime geçebilirsiniz.
             </p>
           </div>

@@ -2,8 +2,8 @@ import type { Metadata } from "next"
 import { Shield, Lock, CheckCircle } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "SSL Sertifikası | Divona Home",
-  description: "Divona Home SSL sertifikası ve güvenlik bilgileri.",
+  title: "SSL Sertifikası | Divona Garden",
+  description: "Divona Garden SSL sertifikası ve güvenlik bilgileri.",
 }
 
 export default function SSLCertificatePage() {
@@ -18,7 +18,7 @@ export default function SSLCertificatePage() {
         </div>
 
         <p className="mb-4">
-          Divona Home olarak, müşterilerimizin güvenliğini en üst düzeyde tutmak için SSL sertifikası kullanıyoruz. Bu
+          Divona Garden olarak, müşterilerimizin güvenliğini en üst düzeyde tutmak için SSL sertifikası kullanıyoruz. Bu
           sayede sitemizde gerçekleştirdiğiniz tüm işlemler şifrelenerek korunmaktadır.
         </p>
 
@@ -63,7 +63,7 @@ export default function SSLCertificatePage() {
           tıklayabilirsiniz. Bu simge, bağlantınızın güvenli olduğunu ve SSL sertifikamızın geçerli olduğunu gösterir.
         </p>
         <p>
-          Divona Home olarak, müşterilerimizin güvenliğini her zaman ön planda tutuyoruz. Herhangi bir sorunuz veya
+          Divona Garden olarak, müşterilerimizin güvenliğini her zaman ön planda tutuyoruz. Herhangi bir sorunuz veya
           endişeniz olursa, lütfen bizimle iletişime geçmekten çekinmeyin.
         </p>
       </div>

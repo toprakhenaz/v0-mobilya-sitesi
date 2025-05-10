@@ -3,8 +3,8 @@ import { ShieldCheck, CreditCard, Lock, AlertCircle, CheckCircle } from "lucide-
 import Image from "next/image"
 
 export const metadata: Metadata = {
-  title: "Güvenli Alışveriş | Divona Home",
-  description: "Divona Home güvenli alışveriş bilgileri ve ödeme güvenliği.",
+  title: "Güvenli Alışveriş | Divona Garden",
+  description: "Divona Garden güvenli alışveriş bilgileri ve ödeme güvenliği.",
 }
 
 export default function SecureShoppingPage() {
@@ -19,7 +19,7 @@ export default function SecureShoppingPage() {
         </div>
 
         <p className="mb-6">
-          Divona Home olarak, müşterilerimize güvenli bir alışveriş deneyimi sunmak için tüm önlemleri alıyoruz.
+          Divona Garden olarak, müşterilerimize güvenli bir alışveriş deneyimi sunmak için tüm önlemleri alıyoruz.
           Sitemizde yaptığınız tüm işlemler SSL sertifikası ile şifrelenerek korunmaktadır.
         </p>
 
@@ -90,7 +90,7 @@ export default function SecureShoppingPage() {
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h3 className="text-lg font-medium mb-4">Güvenlik Sertifikalarımız</h3>
         <p className="mb-4">
-          Divona Home olarak, e-ticaret sitemizin güvenliğini sağlamak için sektör standardı güvenlik sertifikalarını
+          Divona Garden olarak, e-ticaret sitemizin güvenliğini sağlamak için sektör standardı güvenlik sertifikalarını
           kullanıyoruz. SSL sertifikamız ve ETBIS (Elektronik Ticaret Bilgi Sistemi) kaydımız ile güvenli alışveriş
           garantisi sunuyoruz.
         </p>
