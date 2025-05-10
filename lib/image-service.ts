@@ -73,16 +73,26 @@ export async function saveProductImage(productId: number, url: string, isPrimary
 // Get product images
 export async function getProductImages(productId: number) {
   try {
-    // Try to get from database first
-    const { data, error } = await supabase.from("product_images").select("*").eq("product_id", productId)
+    // Get product from database to access image_urls
+    const { data, error } = await supabase.from("products").select("image_urls").eq("id", productId).single()
 
     if (error) {
-      // If database error, fall back to file storage
       console.log("Database error when fetching product images, using fallback:", error)
       return await getProductImagesFromFile(productId)
     }
 
-    return data
+    // Convert image_urls array to ProductImage format
+    if (data && data.image_urls && Array.isArray(data.image_urls)) {
+      return data.image_urls.map((url, index) => ({
+        id: `${productId}-${index}`,
+        product_id: productId,
+        url: url,
+        is_primary: index === 0, // First image is primary
+        created_at: new Date().toISOString(),
+      }))
+    }
+
+    return []
   } catch (error) {
     // If any error, fall back to file storage
     console.error("Error fetching product images:", error)
@@ -91,16 +101,32 @@ export async function getProductImages(productId: number) {
 }
 
 // Set primary image
-export async function setPrimaryImage(imageId: number, productId: number) {
+export async function setPrimaryImage(imageId: string, productId: number) {
   try {
-    // Try database first
-    const { error } = await supabase.from("product_images").update({ is_primary: false }).eq("product_id", productId)
+    // Get current image_urls
+    const { data, error } = await supabase.from("products").select("image_urls").eq("id", productId).single()
 
-    if (error) {
+    if (error || !data || !data.image_urls) {
       throw new Error("Database error when updating primary image")
     }
 
-    const { error: updateError } = await supabase.from("product_images").update({ is_primary: true }).eq("id", imageId)
+    // Find the index of the image to make primary
+    const imageIndex = Number.parseInt(imageId.split("-")[1], 10)
+
+    if (isNaN(imageIndex) || imageIndex < 0 || imageIndex >= data.image_urls.length) {
+      throw new Error("Invalid image index")
+    }
+
+    // Reorder the array to make the selected image first
+    const newImageUrls = [...data.image_urls]
+    const primaryImage = newImageUrls.splice(imageIndex, 1)[0]
+    newImageUrls.unshift(primaryImage)
+
+    // Update the product with the new image_urls order
+    const { error: updateError } = await supabase
+      .from("products")
+      .update({ image_urls: newImageUrls })
+      .eq("id", productId)
 
     if (updateError) {
       throw new Error("Database error when setting primary image")
@@ -108,61 +134,49 @@ export async function setPrimaryImage(imageId: number, productId: number) {
 
     return true
   } catch (error) {
-    // Fall back to file storage
-    try {
-      if (!fs.existsSync(PRODUCT_IMAGES_FILE)) {
-        return false
-      }
-
-      const fileData = await readFile(PRODUCT_IMAGES_FILE, "utf8")
-      let images = JSON.parse(fileData || "[]")
-
-      // Reset all images for this product to not primary
-      images = images.map((img: any) => {
-        if (img.product_id === productId) {
-          return { ...img, is_primary: img.id === imageId }
-        }
-        return img
-      })
-
-      await fs.promises.writeFile(PRODUCT_IMAGES_FILE, JSON.stringify(images, null, 2), "utf8")
-      return true
-    } catch (fileError) {
-      console.error("Error updating primary image in file:", fileError)
-      return false
-    }
+    console.error("Error updating primary image:", error)
+    return false
   }
 }
 
 // Delete product image
-export async function deleteProductImage(imageId: number) {
+export async function deleteProductImage(imageId: string) {
   try {
-    // Try database first
-    const { error } = await supabase.from("product_images").delete().eq("id", imageId)
+    // Parse the image ID to get product ID and image index
+    const [productId, imageIndex] = imageId.split("-").map(Number)
 
-    if (error) {
+    if (isNaN(productId) || isNaN(imageIndex)) {
+      throw new Error("Invalid image ID format")
+    }
+
+    // Get current image_urls
+    const { data, error } = await supabase.from("products").select("image_urls").eq("id", productId).single()
+
+    if (error || !data || !data.image_urls) {
       throw new Error("Database error when deleting image")
+    }
+
+    // Remove the image at the specified index
+    const newImageUrls = [...data.image_urls]
+    if (imageIndex < 0 || imageIndex >= newImageUrls.length) {
+      throw new Error("Image index out of bounds")
+    }
+
+    newImageUrls.splice(imageIndex, 1)
+
+    // Update the product with the new image_urls array
+    const { error: updateError } = await supabase
+      .from("products")
+      .update({ image_urls: newImageUrls })
+      .eq("id", productId)
+
+    if (updateError) {
+      throw new Error("Database error when updating image_urls")
     }
 
     return true
   } catch (error) {
-    // Fall back to file storage
-    try {
-      if (!fs.existsSync(PRODUCT_IMAGES_FILE)) {
-        return false
-      }
-
-      const fileData = await readFile(PRODUCT_IMAGES_FILE, "utf8")
-      let images = JSON.parse(fileData || "[]")
-
-      // Filter out the image to delete
-      images = images.filter((img: any) => img.id !== imageId)
-
-      await fs.promises.writeFile(PRODUCT_IMAGES_FILE, JSON.stringify(images, null, 2), "utf8")
-      return true
-    } catch (fileError) {
-      console.error("Error deleting image from file:", fileError)
-      return false
-    }
+    console.error("Error deleting image:", error)
+    return false
   }
 }

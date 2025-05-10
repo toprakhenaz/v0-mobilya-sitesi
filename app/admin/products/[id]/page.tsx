@@ -23,14 +23,7 @@ import {
 import { Loader2, Save, ArrowLeft, Trash2, Upload, X, ImageIcon, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import {
-  getCategories,
-  getProduct,
-  updateProduct,
-  deleteProduct,
-  deleteProductImage,
-  createProduct,
-} from "@/lib/admin-service"
+import { getCategories, getProduct, updateProduct, deleteProduct, createProduct } from "@/lib/admin-service"
 import type { Category, Product, ProductImage } from "@/lib/admin-service"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
@@ -316,9 +309,20 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     }
   }
 
-  const handleDeleteImage = async (imageId: number) => {
+  const handleDeleteImage = async (imageId: string) => {
     try {
-      await deleteProductImage(imageId)
+      const response = await fetch(`/api/admin/delete-product-image`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ imageId }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Resim silinirken bir hata oluştu")
+      }
+
       setImages(images.filter((img) => img.id !== imageId))
       toast({
         title: "Başarılı",
@@ -406,10 +410,22 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     }
   }
 
-  const handleSetPrimaryImage = async (imageId: number) => {
+  const handleSetPrimaryImage = async (imageId: string) => {
     try {
-      // API çağrısı yapılabilir
-      // Şimdilik sadece UI'ı güncelliyoruz
+      // API çağrısı yap
+      const response = await fetch(`/api/admin/set-primary-image`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ imageId, productId }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Ana resim güncellenirken bir hata oluştu")
+      }
+
+      // UI'ı güncelle
       const updatedImages = images.map((img) => ({
         ...img,
         is_primary: img.id === imageId,
