@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { toast } from "@/components/ui/use-toast"
-import { Plus, Pencil, Trash2, MoveUp, MoveDown, ImageIcon, AlertCircle } from "lucide-react"
+import { Plus, Pencil, Trash2, MoveUp, MoveDown, ImageIcon, AlertCircle, Upload } from "lucide-react"
 import {
   getHeroSlides,
   createHeroSlide,
@@ -44,6 +44,8 @@ export default function HeroCarouselPage() {
     description: "",
     is_active: true,
   })
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetchSlides()
@@ -82,8 +84,8 @@ export default function HeroCarouselPage() {
     setFormData({
       image_url: slide.image_url,
       title: slide.title,
-      subtitle: slide.subtitle,
-      description: slide.description,
+      subtitle: slide.subtitle || "",
+      description: slide.description || "",
       is_active: slide.is_active,
     })
     setIsEditDialogOpen(true)
@@ -101,6 +103,41 @@ export default function HeroCarouselPage() {
 
   function handleSwitchChange(checked: boolean) {
     setFormData((prev) => ({ ...prev, is_active: checked }))
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      setUploadingImage(true)
+
+      // Burada normalde bir API endpoint'e dosyayı yükleyecek kod olacak
+      // Örnek olarak bir simülasyon yapıyoruz
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Gerçek bir uygulamada, sunucudan dönen URL'yi kullanacaksınız
+      const imageUrl = URL.createObjectURL(file)
+
+      setFormData((prev) => ({
+        ...prev,
+        image_url: imageUrl,
+      }))
+
+      toast({
+        title: "Başarılı",
+        description: "Görsel başarıyla yüklendi.",
+      })
+    } catch (error) {
+      console.error("Görsel yüklenirken hata:", error)
+      toast({
+        title: "Hata",
+        description: "Görsel yüklenirken bir hata oluştu.",
+        variant: "destructive",
+      })
+    } finally {
+      setUploadingImage(false)
+    }
   }
 
   async function handleAddSlide() {
@@ -249,10 +286,10 @@ export default function HeroCarouselPage() {
               </Button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {slides.map((slide) => (
-                <div key={slide.id} className="flex items-center border rounded-lg p-4">
-                  <div className="relative w-24 h-16 mr-4 rounded overflow-hidden">
+                <Card key={slide.id} className="overflow-hidden border">
+                  <div className="relative aspect-[16/9] bg-gray-100">
                     {slide.image_url ? (
                       <Image
                         src={slide.image_url || "/placeholder.svg"}
@@ -261,36 +298,40 @@ export default function HeroCarouselPage() {
                         className="object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                        <ImageIcon className="h-6 w-6 text-gray-400" />
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ImageIcon className="h-12 w-12 text-gray-400" />
+                      </div>
+                    )}
+                    {!slide.is_active && (
+                      <div className="absolute top-2 right-2 px-2 py-1 text-xs bg-gray-900/70 text-white rounded">
+                        Pasif
                       </div>
                     )}
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center">
-                      <h3 className="font-medium">{slide.title}</h3>
-                      {!slide.is_active && (
-                        <span className="ml-2 px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">Pasif</span>
-                      )}
+                  <CardContent className="p-4">
+                    <h3 className="font-medium text-lg mb-1">{slide.title}</h3>
+                    <p className="text-sm text-muted-foreground mb-2">{slide.subtitle}</p>
+                    <p className="text-sm mb-4">{slide.description}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-1">
+                        <Button variant="outline" size="sm" onClick={() => handleMoveSlide(slide.id, "up")}>
+                          <MoveUp className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleMoveSlide(slide.id, "down")}>
+                          <MoveDown className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Button variant="outline" size="sm" onClick={() => handleEditDialogOpen(slide)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleDeleteDialogOpen(slide)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">{slide.subtitle}</p>
-                    <p className="text-sm">{slide.description}</p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="icon" onClick={() => handleMoveSlide(slide.id, "up")}>
-                      <MoveUp className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={() => handleMoveSlide(slide.id, "down")}>
-                      <MoveDown className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={() => handleEditDialogOpen(slide)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={() => handleDeleteDialogOpen(slide)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
@@ -306,15 +347,61 @@ export default function HeroCarouselPage() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="image_url">Görsel URL</Label>
-              <Input
-                id="image_url"
-                name="image_url"
-                value={formData.image_url}
-                onChange={handleInputChange}
-                placeholder="https://example.com/image.jpg"
-              />
-              <p className="text-xs text-muted-foreground">Önerilen boyut: 1920x600 piksel</p>
+              <Label htmlFor="image">Görsel</Label>
+              <div className="flex flex-col gap-2">
+                <div className="relative aspect-[16/9] bg-gray-100 border rounded-md overflow-hidden">
+                  {formData.image_url ? (
+                    <Image
+                      src={formData.image_url || "/placeholder.svg"}
+                      alt="Önizleme"
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="h-12 w-12 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    className="w-full"
+                  >
+                    {uploadingImage ? (
+                      <>
+                        <AlertCircle className="mr-2 h-4 w-4 animate-spin" />
+                        Yükleniyor...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Görsel Yükle
+                      </>
+                    )}
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
+                  <Input
+                    id="image_url"
+                    name="image_url"
+                    value={formData.image_url}
+                    onChange={handleInputChange}
+                    placeholder="veya görsel URL'si girin"
+                    className="flex-1"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">Önerilen boyut: 1920x600 piksel</p>
+              </div>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="title">Başlık</Label>
@@ -369,15 +456,61 @@ export default function HeroCarouselPage() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="edit_image_url">Görsel URL</Label>
-              <Input
-                id="edit_image_url"
-                name="image_url"
-                value={formData.image_url}
-                onChange={handleInputChange}
-                placeholder="https://example.com/image.jpg"
-              />
-              <p className="text-xs text-muted-foreground">��nerilen boyut: 1920x600 piksel</p>
+              <Label htmlFor="edit_image">Görsel</Label>
+              <div className="flex flex-col gap-2">
+                <div className="relative aspect-[16/9] bg-gray-100 border rounded-md overflow-hidden">
+                  {formData.image_url ? (
+                    <Image
+                      src={formData.image_url || "/placeholder.svg"}
+                      alt="Önizleme"
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="h-12 w-12 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    className="w-full"
+                  >
+                    {uploadingImage ? (
+                      <>
+                        <AlertCircle className="mr-2 h-4 w-4 animate-spin" />
+                        Yükleniyor...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Görsel Yükle
+                      </>
+                    )}
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
+                  <Input
+                    id="edit_image_url"
+                    name="image_url"
+                    value={formData.image_url}
+                    onChange={handleInputChange}
+                    placeholder="veya görsel URL'si girin"
+                    className="flex-1"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">Önerilen boyut: 1920x600 piksel</p>
+              </div>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit_title">Başlık</Label>

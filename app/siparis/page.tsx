@@ -150,7 +150,17 @@ export default function Checkout() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setReceiptFile(e.target.files[0])
+      const file = e.target.files[0]
+      // Sadece PDF dosyalarını kabul et
+      if (file.type !== "application/pdf") {
+        toast({
+          title: "Hata",
+          description: "Lütfen sadece PDF formatında dekont yükleyin.",
+          variant: "destructive",
+        })
+        return
+      }
+      setReceiptFile(file)
     }
   }
 
@@ -683,7 +693,7 @@ export default function Checkout() {
                         ref={fileInputRef}
                         onChange={handleFileChange}
                         className="hidden"
-                        accept="image/*,.pdf"
+                        accept=".pdf"
                         required
                       />
                       <Button
@@ -693,7 +703,7 @@ export default function Checkout() {
                         className="flex items-center"
                       >
                         <Upload className="h-4 w-4 mr-2" />
-                        Dekont Yükle
+                        Dekont Yükle (Sadece PDF)
                       </Button>
                       {receiptFile && (
                         <span className="ml-3 text-sm text-gray-600">
@@ -702,7 +712,7 @@ export default function Checkout() {
                       )}
                     </div>
                     <p className="text-xs text-gray-500 mt-2">
-                      Ödemenizi yaptıktan sonra dekontu yüklemeniz gerekmektedir.
+                      Ödemenizi yaptıktan sonra dekontu PDF formatında yüklemeniz gerekmektedir.
                     </p>
                   </div>
                 )}

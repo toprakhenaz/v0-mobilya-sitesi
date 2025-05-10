@@ -12,12 +12,14 @@ export type CartItem = {
   product_id: number
   quantity: number
   product?: Product
+  price: number // Add price directly to cart item
+  options?: string[]
 }
 
 type CartContextType = {
   cartItems: CartItem[]
   isLoading: boolean
-  addToCart: (productId: number, quantity: number) => Promise<void>
+  addToCart: (productId: number, quantity: number, options?: string[]) => Promise<void>
   removeFromCart: (cartItemId: number) => Promise<void>
   updateQuantity: (cartItemId: number, quantity: number) => Promise<void>
   clearCart: () => Promise<void>
@@ -56,10 +58,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
                     .select("*")
                     .eq("id", item.product_id)
                     .single()
-                  return { ...item, product: product || {} }
+
+                  // Add price directly to cart item
+                  return {
+                    ...item,
+                    product: product || {},
+                    price: product?.price || 0,
+                  }
                 } catch (error) {
                   console.error("Error fetching product:", error)
-                  return { ...item, product: {} }
+                  return { ...item, product: {}, price: 0 }
                 }
               }),
             )
@@ -88,13 +96,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
         if (error) throw error
 
-        // Ensure all products have valid data
+        // Ensure all products have valid data and add price directly to cart item
         const validatedItems =
           data?.map((item) => {
             if (!item.product) {
-              return { ...item, product: {} }
+              return { ...item, product: {}, price: 0 }
             }
-            return item
+            return {
+              ...item,
+              price: item.product.price || 0,
+            }
           }) || []
 
         setCartItems(validatedItems)
@@ -110,7 +121,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [user])
 
   // Add to cart
-  const addToCart = async (productId: number, quantity: number) => {
+  const addToCart = async (productId: number, quantity: number, options?: string[]) => {
     try {
       // First, check if the product exists and is in stock
       const { data: product, error: productError } = await supabase
@@ -139,7 +150,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       if (!user) {
         // Handle non-authenticated users
-        const existingItemIndex = cartItems.findIndex((item) => item.product_id === productId)
+        const existingItemIndex = cartItems.findIndex(
+          (item) =>
+            item.product_id === productId && JSON.stringify(item.options || []) === JSON.stringify(options || []),
+        )
 
         if (existingItemIndex >= 0) {
           // Update existing item
@@ -154,6 +168,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
             product_id: productId,
             quantity,
             product,
+            price: product.price || 0,
+            options,
           }
 
           const updatedItems = [...cartItems, newItem]
@@ -175,6 +191,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         .select("*")
         .eq("user_id", user.id)
         .eq("product_id", productId)
+        .eq("options", options || [])
         .maybeSingle()
 
       if (existingItem) {
@@ -192,7 +209,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (error) throw error
 
         // Update cart items
-        setCartItems((prev) => prev.map((item) => (item.id === existingItem.id ? data : item)))
+        const updatedItem = {
+          ...data,
+          price: data.product?.price || 0,
+        }
+
+        setCartItems((prev) => prev.map((item) => (item.id === existingItem.id ? updatedItem : item)))
       } else {
         // Add new item
         const { data, error } = await supabase
@@ -201,6 +223,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             user_id: user.id,
             product_id: productId,
             quantity,
+            options: options || [],
           })
           .select(`
             *,
@@ -211,7 +234,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (error) throw error
 
         // Add to cart items
-        setCartItems((prev) => [...prev, data])
+        const newItem = {
+          ...data,
+          price: data.product?.price || 0,
+        }
+
+        setCartItems((prev) => [...prev, newItem])
       }
 
       toast({
@@ -307,7 +335,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (error) throw error
 
       // Update cart items
-      setCartItems((prev) => prev.map((item) => (item.id === cartItemId ? data : item)))
+      const updatedItem = {
+        ...data,
+        price: data.product?.price || 0,
+      }
+
+      setCartItems((prev) => prev.map((item) => (item.id === cartItemId ? updatedItem : item)))
     } catch (error) {
       console.error("Error updating cart:", error)
       toast({
@@ -347,11 +380,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Calculate totals - with safety checks
   const subtotal = cartItems.reduce((total, item) => {
-    const price = item.product?.price || 0
-    return total + price * item.quantity
+    // Use the price directly from the cart item
+    const price = item.price || 0
+    const quantity = item.quantity || 0
+    return total + price * quantity
   }, 0)
 
-  const shipping = subtotal > 5000 ? 0 : 150
+  // Get shipping settings
+  const shippingFeeValue = 150 // Default shipping fee
+  const freeShippingThreshold = 2500 // Default free shipping threshold
+
+  const shipping = subtotal >= freeShippingThreshold ? 0 : shippingFeeValue
   const total = subtotal + shipping
 
   return (

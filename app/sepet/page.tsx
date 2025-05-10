@@ -25,6 +25,27 @@ export default function Cart() {
     getSetting("free_shipping_threshold") || getSetting("ucretsiz_kargo_esigi") || "5000",
   )
 
+  // WhatsApp numarası ve mesaj oluşturma
+  const whatsappNumber = getSetting("whatsapp_number") || getSetting("whatsapp_numarasi") || "+905551234567"
+
+  // Sepetteki ürünleri ve toplam tutarı içeren mesaj oluştur
+  const createWhatsAppMessage = () => {
+    let message = "Merhaba, aşağıdaki ürünler için PTT ile ödeme yapmak istiyorum:\n\n"
+
+    cartItems.forEach((item, index) => {
+      message += `${index + 1}. ${item.product?.name || "Ürün"} - ${item.quantity} adet - ${(item.price || 0).toLocaleString("tr-TR")} ₺\n`
+    })
+
+    message += `\nToplam Tutar: ${total.toLocaleString("tr-TR")} ₺`
+    return message
+  }
+
+  // WhatsApp URL'i oluştur
+  const getWhatsAppUrl = () => {
+    const cleanNumber = whatsappNumber.replace(/\s+/g, "").replace(/\+/g, "")
+    return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(createWhatsAppMessage())}`
+  }
+
   useEffect(() => {
     const calculatedSubtotal = cartItems.reduce((acc, item) => {
       const itemPrice = item.price * item.quantity
@@ -158,11 +179,39 @@ export default function Cart() {
               </div>
 
               <Link href="/siparis">
-                <Button className="w-full">
+                <Button className="w-full mb-3 bg-green-600 hover:bg-green-700">
                   Siparişi Tamamla
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
+
+              {/* "veya" yazısı */}
+              <div className="relative my-3 text-center">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-white px-4 text-sm text-gray-500">veya</span>
+                </div>
+              </div>
+
+              {/* PTT ile Güvenli Ödeme Butonu */}
+              <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="block w-full">
+                <Button variant="outline" className="w-full h-12 border-[#00a8cc] hover:bg-gray-50">
+                  <div className="flex items-center justify-center w-full">
+                    <div className="flex items-center">
+                      <Image
+                        src="/ptt-logo.png"
+                        alt="PTT Logo"
+                        width={60}
+                        height={24}
+                        className="object-contain mr-2"
+                      />
+                      <span className="text-[#00a8cc] font-medium">ile Güvenli Ödeme</span>
+                    </div>
+                  </div>
+                </Button>
+              </a>
 
               <div className="mt-6 space-y-4">
                 <div className="flex items-center text-sm text-gray-600">
@@ -183,30 +232,6 @@ export default function Cart() {
                     sayfasını ziyaret edebilirsiniz.
                   </span>
                 </div>
-              </div>
-            </div>
-
-            <div className="p-6 bg-gray-50 border-t border-gray-100">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium">Ödeme Seçenekleri</h3>
-              </div>
-              <div className="flex gap-2">
-                <Image src="/visa-logo-new.png" alt="Visa" width={40} height={25} className="object-contain" />
-                <Image
-                  src="/mastercard-logo-abstract.png"
-                  alt="Mastercard"
-                  width={40}
-                  height={25}
-                  className="object-contain"
-                />
-                <Image
-                  src="/amex-logo-new.png"
-                  alt="American Express"
-                  width={40}
-                  height={25}
-                  className="object-contain"
-                />
-                <Image src="/paypal-logo-abstract.png" alt="PayPal" width={40} height={25} className="object-contain" />
               </div>
             </div>
           </div>

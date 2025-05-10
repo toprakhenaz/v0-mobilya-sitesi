@@ -10,8 +10,8 @@ import { SiteSettingsProvider } from "@/contexts/site-settings-context"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Divona Home - Bahçe Mobilyaları",
-  description: "Bahçe mobilyaları ve dış mekan dekorasyonu için Divona Home",
+  title: "Divona Garden - Bahçe Mobilyaları",
+  description: "Bahçe mobilyaları ve dış mekan dekorasyonu için Divona Garden",
   icons: [
     {
       rel: "icon",

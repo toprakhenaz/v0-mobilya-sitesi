@@ -453,7 +453,7 @@ export default function Footer() {
             </div>
           </div>
 
-          <div className="mt-6 flex justify-center items-center">
+          <div className="mt-6 flex justify-center items-center pb-8">
             <div className="flex items-center">
               <Link href="https://etbis.gov.tr" target="_blank" rel="noopener noreferrer" className="mr-4">
                 <Image src="/etbis-qr.png" alt="ETBIS" width={100} height={100} className="object-contain" />

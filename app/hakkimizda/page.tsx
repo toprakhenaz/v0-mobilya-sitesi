@@ -11,17 +11,17 @@ export default function AboutUs() {
 
           <div className="bg-white rounded-lg shadow-card overflow-hidden mb-8">
             <div className="relative h-64 md:h-80">
-              <Image src="/placeholder.svg?key=efwx2" alt="Divona Home Showroom" fill className="object-cover" />
+              <Image src="/placeholder.svg?key=efwx2" alt="Divona Garden Showroom" fill className="object-cover" />
             </div>
 
             <div className="p-6">
-              <h2 className="text-2xl font-bold mb-4">Divona Home</h2>
+              <h2 className="text-2xl font-bold mb-4">Divona Garden</h2>
 
               <div className="prose max-w-none">
                 <p className="mb-4">
-                  2010 yılında kurulan Divona Home, bahçe mobilyaları ve dış mekan dekorasyonu alanında Türkiye'nin önde
-                  gelen markalarından biridir. Kaliteli malzemeler, şık tasarımlar ve müşteri memnuniyeti odaklı hizmet
-                  anlayışımızla, müşterilerimize en iyi bahçe mobilya deneyimini sunmayı hedefliyoruz.
+                  2010 yılında kurulan Divona Garden, bahçe mobilyaları ve dış mekan dekorasyonu alanında Türkiye'nin
+                  önde gelen markalarından biridir. Kaliteli malzemeler, şık tasarımlar ve müşteri memnuniyeti odaklı
+                  hizmet anlayışımızla, müşterilerimize en iyi bahçe mobilya deneyimini sunmayı hedefliyoruz.
                 </p>
 
                 <p className="mb-4">
@@ -31,8 +31,8 @@ export default function AboutUs() {
                 </p>
 
                 <p className="mb-4">
-                  Divona Home olarak, müşterilerimizin bahçelerini, teraslarını ve balkonlarını keyifli yaşam alanlarına
-                  dönüştürmelerine yardımcı olmaktan gurur duyuyoruz. Ürünlerimiz, hava koşullarına dayanıklı
+                  Divona Garden olarak, müşterilerimizin bahçelerini, teraslarını ve balkonlarını keyifli yaşam
+                  alanlarına dönüştürmelerine yardımcı olmaktan gurur duyuyoruz. Ürünlerimiz, hava koşullarına dayanıklı
                   malzemelerden üretilmiş olup, uzun yıllar boyunca kullanım sağlar.
                 </p>
               </div>

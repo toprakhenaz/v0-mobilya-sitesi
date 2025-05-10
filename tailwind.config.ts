@@ -26,25 +26,25 @@ const config = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#4CAF50",
+          DEFAULT: "#2e7d32", // Daha koyu ve profesyonel bir yeşil
           foreground: "#ffffff",
-          50: "#e8f5e9",
-          100: "#c8e6c9",
-          200: "#a5d6a7",
-          300: "#81c784",
-          400: "#66bb6a",
-          500: "#4caf50",
-          600: "#43a047",
-          700: "#388e3c",
-          800: "#2e7d32",
-          900: "#1b5e20",
+          50: "#f1f8e9",
+          100: "#dcedc8",
+          200: "#c5e1a5",
+          300: "#aed581",
+          400: "#9ccc65",
+          500: "#8bc34a",
+          600: "#7cb342",
+          700: "#689f38",
+          800: "#558b2f",
+          900: "#33691e",
         },
         secondary: {
           DEFAULT: "#f9a825",
           foreground: "#ffffff",
         },
         destructive: {
-          DEFAULT: "#ef5350",
+          DEFAULT: "#d32f2f",
           foreground: "#ffffff",
         },
         muted: {
@@ -52,8 +52,8 @@ const config = {
           foreground: "#6b7280",
         },
         accent: {
-          DEFAULT: "#e8f5e9",
-          foreground: "#1b5e20",
+          DEFAULT: "#f1f8e9",
+          foreground: "#33691e",
         },
         card: {
           DEFAULT: "#ffffff",
@@ -61,13 +61,13 @@ const config = {
         },
       },
       borderRadius: {
-        lg: "0.5rem",
-        md: "0.375rem",
-        sm: "0.25rem",
+        lg: "0.375rem",
+        md: "0.25rem",
+        sm: "0.125rem",
       },
       boxShadow: {
-        card: "0 2px 8px rgba(0, 0, 0, 0.08)",
-        dropdown: "0 4px 12px rgba(0, 0, 0, 0.1)",
+        card: "0 1px 3px rgba(0, 0, 0, 0.05)",
+        dropdown: "0 2px 8px rgba(0, 0, 0, 0.08)",
       },
       fontFamily: {
         sans: ["var(--font-sans)"],

@@ -171,7 +171,7 @@ export default function AdminSettingsPage() {
                   id="about_short"
                   value={settings.about_short || ""}
                   onChange={(e) => handleChange("about_short", e.target.value)}
-                  placeholder="Divona Home, bahçe mobilyaları ve dış mekan dekorasyonu konusunda Türkiye'nin önde gelen markasıdır."
+                  placeholder="Divona Garden, bahçe mobilyaları ve dış mekan dekorasyonu konusunda Türkiye'nin önde gelen markasıdır."
                   rows={3}
                   className="focus-visible:ring-primary"
                 />
@@ -219,7 +219,7 @@ export default function AdminSettingsPage() {
                   id="email"
                   value={settings.email || ""}
                   onChange={(e) => handleChange("email", e.target.value)}
-                  placeholder="info@divonahome.com"
+                  placeholder="info@divonagarden.com"
                   className="focus-visible:ring-primary"
                 />
               </div>
@@ -267,7 +267,7 @@ export default function AdminSettingsPage() {
                   id="facebook_url"
                   value={settings.facebook_url || ""}
                   onChange={(e) => handleChange("facebook_url", e.target.value)}
-                  placeholder="https://facebook.com/divonahome"
+                  placeholder="https://facebook.com/divonagarden"
                   className="focus-visible:ring-primary"
                 />
               </div>
@@ -277,7 +277,7 @@ export default function AdminSettingsPage() {
                   id="instagram_url"
                   value={settings.instagram_url || ""}
                   onChange={(e) => handleChange("instagram_url", e.target.value)}
-                  placeholder="https://instagram.com/divonahome"
+                  placeholder="https://instagram.com/divonagarden"
                   className="focus-visible:ring-primary"
                 />
               </div>
@@ -287,7 +287,7 @@ export default function AdminSettingsPage() {
                   id="twitter_url"
                   value={settings.twitter_url || ""}
                   onChange={(e) => handleChange("twitter_url", e.target.value)}
-                  placeholder="https://twitter.com/divonahome"
+                  placeholder="https://twitter.com/divonagarden"
                   className="focus-visible:ring-primary"
                 />
               </div>
@@ -297,7 +297,7 @@ export default function AdminSettingsPage() {
                   id="youtube_url"
                   value={settings.youtube_url || ""}
                   onChange={(e) => handleChange("youtube_url", e.target.value)}
-                  placeholder="https://youtube.com/divonahome"
+                  placeholder="https://youtube.com/divonagarden"
                   className="focus-visible:ring-primary"
                 />
               </div>
@@ -344,7 +344,7 @@ export default function AdminSettingsPage() {
                   id="account_holder"
                   value={settings.account_holder || ""}
                   onChange={(e) => handleChange("account_holder", e.target.value)}
-                  placeholder="Divona Home Ltd. Şti."
+                  placeholder="Divona Garden Ltd. Şti."
                   className="focus-visible:ring-primary"
                 />
               </div>
@@ -402,7 +402,7 @@ export default function AdminSettingsPage() {
                   id="whatsapp_message"
                   value={settings.whatsapp_message || ""}
                   onChange={(e) => handleChange("whatsapp_message", e.target.value)}
-                  placeholder="Merhaba, Divona Home hakkında bilgi almak istiyorum."
+                  placeholder="Merhaba, Divona Garden hakkında bilgi almak istiyorum."
                   rows={3}
                   className="focus-visible:ring-primary"
                 />

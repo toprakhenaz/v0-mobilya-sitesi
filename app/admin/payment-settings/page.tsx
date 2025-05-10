@@ -139,7 +139,7 @@ export default function AdminPaymentSettingsPage() {
                 id="account_holder"
                 value={settings.account_holder}
                 onChange={(e) => handleChange("account_holder", e.target.value)}
-                placeholder="Divona Home Ltd. Şti."
+                placeholder="Divona Garden Ltd. Şti."
                 className="focus-visible:ring-primary"
               />
             </div>

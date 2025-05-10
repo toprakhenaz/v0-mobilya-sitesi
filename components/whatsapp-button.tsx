@@ -2,14 +2,29 @@
 
 import { useState } from "react"
 import { useSiteSettings } from "@/contexts/site-settings-context"
+import { useCart } from "@/contexts/cart-context"
 
 export default function WhatsAppButton() {
   const [isHovered, setIsHovered] = useState(false)
   const { getSetting } = useSiteSettings()
+  const { cartItems, total } = useCart()
 
   const whatsappNumber = getSetting("whatsapp_number") || getSetting("whatsapp_numarasi") || "+905551234567"
-  const defaultMessage =
+
+  // Sepetteki ürünleri ve toplam tutarı içeren mesaj oluştur
+  let defaultMessage =
     getSetting("whatsapp_message") || getSetting("varsayilan_mesaj") || "Merhaba, bilgi almak istiyorum."
+
+  // Eğer sepette ürün varsa, ürün bilgilerini mesaja ekle
+  if (cartItems && cartItems.length > 0) {
+    defaultMessage = "Merhaba, aşağıdaki ürünler hakkında bilgi almak istiyorum:\n\n"
+
+    cartItems.forEach((item, index) => {
+      defaultMessage += `${index + 1}. ${item.product?.name || "Ürün"} - ${item.quantity} adet - ${item.product?.price?.toLocaleString("tr-TR") || "0"} ₺\n`
+    })
+
+    defaultMessage += `\nToplam Tutar: ${total?.toLocaleString("tr-TR") || "0"} ₺`
+  }
 
   // WhatsApp numarasından + ve boşlukları temizle
   const cleanNumber = whatsappNumber.replace(/\s+/g, "").replace(/\+/g, "")
