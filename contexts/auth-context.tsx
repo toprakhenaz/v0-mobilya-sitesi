@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(data as User)
         }
       } catch (error) {
-        console.error("Error fetching user:", error)
+        // console.error("Error fetching user:", error) - Bu satırı kaldır
       } finally {
         setIsLoading(false)
       }

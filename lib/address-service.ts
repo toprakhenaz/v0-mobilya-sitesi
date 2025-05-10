@@ -25,7 +25,6 @@ export async function getAddressesByUserId(userId: string): Promise<Address[]> {
 
     return data || []
   } catch (error) {
-    console.error("Error fetching addresses:", error)
     throw error
   }
 }
@@ -47,7 +46,6 @@ export async function createAddress(address: Omit<Address, "id">): Promise<Addre
 
     return data
   } catch (error) {
-    console.error("Error creating address:", error)
     throw error
   }
 }
@@ -69,7 +67,6 @@ export async function updateAddress(id: number, address: Partial<Address>): Prom
 
     return data
   } catch (error) {
-    console.error("Error updating address:", error)
     throw error
   }
 }
@@ -80,7 +77,6 @@ export async function deleteAddress(id: number): Promise<void> {
 
     if (error) throw error
   } catch (error) {
-    console.error("Error deleting address:", error)
     throw error
   }
 }

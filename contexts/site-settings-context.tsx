@@ -49,9 +49,7 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     async function fetchSettings() {
       try {
-        console.log("Site ayarları alınıyor...")
         const data = await getSiteSettings()
-        console.log("Alınan site ayarları:", data)
 
         const settingsObj: Record<string, string> = { ...defaultSettings }
 
@@ -62,13 +60,12 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
             }
           })
         } else {
-          console.warn("Alınan site ayarları geçerli bir dizi değil, varsayılan ayarlar kullanılıyor")
+          // Varsayılan ayarları kullan
         }
 
         setSettings(settingsObj)
         setError(null)
       } catch (error) {
-        console.error("Site ayarları alınırken hata:", error)
         setError("Site ayarları yüklenirken bir hata oluştu. Varsayılan ayarlar kullanılıyor.")
         // Varsayılan ayarları kullanmaya devam et
       } finally {

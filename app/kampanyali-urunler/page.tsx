@@ -18,7 +18,7 @@ export default function SaleProducts() {
         const productsData = await getSaleProducts(12)
         setProducts(productsData)
       } catch (error) {
-        console.error("Error fetching products:", error)
+        // console.error("Error fetching products:", error) - Bu satırı kaldır
         setProducts([])
       } finally {
         setIsLoading(false)

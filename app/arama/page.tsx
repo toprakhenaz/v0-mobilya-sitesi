@@ -42,7 +42,7 @@ export default function SearchPage() {
         setProducts(searchResults)
         setTotalProducts(total)
       } catch (error) {
-        console.error("Error searching products:", error)
+        // console.error("Error searching products:", error) - Bu satırı kaldır
       } finally {
         setIsLoading(false)
       }

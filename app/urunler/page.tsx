@@ -29,7 +29,7 @@ export default function ProductsPage() {
         setProducts(productsData)
         setTotalProducts(total)
       } catch (error) {
-        console.error("Error fetching data:", error)
+        // console.error("Error fetching data:", error) - Bu satırı kaldır
       } finally {
         setIsLoading(false)
       }

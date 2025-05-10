@@ -40,7 +40,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
 
         setOrder(data)
       } catch (error) {
-        console.error("Sipariş yüklenirken hata:", error)
+        // console.error("Sipariş yüklenirken hata:", error) - Bu satırı kaldır
         router.push("/hesabim/siparislerim")
       } finally {
         setIsLoading(false)

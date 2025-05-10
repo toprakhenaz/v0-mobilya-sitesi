@@ -58,7 +58,6 @@ export default function RegisterForm() {
       const { error } = await signUp(email, password, userData)
 
       if (error) {
-        console.error("Registration error:", error)
         toast({
           title: "Kayıt başarısız",
           description: error.message || "Kayıt olurken bir hata oluştu.",

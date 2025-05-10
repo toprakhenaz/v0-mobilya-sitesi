@@ -4,23 +4,9 @@ import { createClient } from "@supabase/supabase-js"
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// Çevre değişkenlerini kontrol et ve konsola bilgi yazdır
-console.log("Supabase URL:", supabaseUrl ? "Mevcut" : "Eksik")
-console.log("Supabase Anon Key:", supabaseAnonKey ? "Mevcut" : "Eksik")
-console.log(
-  "Supabase Anon Key (ilk 10 karakter):",
-  supabaseAnonKey ? supabaseAnonKey.substring(0, 10) + "..." : "Eksik",
-)
-
 // Eğer çevre değişkenleri eksikse, hata mesajı yazdır
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("HATA: Supabase URL veya Anon Key bulunamadı!")
-  console.error("Lütfen .env dosyasını kontrol edin ve aşağıdaki değişkenlerin olduğundan emin olun:")
-  console.error("NEXT_PUBLIC_SUPABASE_URL ve NEXT_PUBLIC_SUPABASE_ANON_KEY")
-  console.error(
-    "Mevcut değişkenler:",
-    Object.keys(process.env).filter((key) => key.includes("SUPABASE") || key.includes("POSTGRES")),
-  )
+  throw new Error("Supabase URL veya Anon Key bulunamadı! Lütfen .env dosyasını kontrol edin.")
 }
 
 // Supabase istemcisini oluştur
@@ -38,9 +24,7 @@ export function getSupabaseClient() {
           persistSession: true,
         },
       })
-      console.log("Supabase client başarıyla oluşturuldu")
     } catch (error) {
-      console.error("Supabase client oluşturulurken hata:", error)
       throw error
     }
   }
@@ -60,11 +44,7 @@ try {
       persistSession: true,
     },
   })
-
-  console.log("Supabase client başarıyla oluşturuldu ve dışa aktarıldı")
 } catch (error) {
-  console.error("Supabase client başlatılamadı:", error)
-
   // Hata durumunda yedek bir istemci oluştur
   supabase = {
     from: () => ({
