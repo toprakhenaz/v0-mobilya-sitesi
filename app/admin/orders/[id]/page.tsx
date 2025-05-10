@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
@@ -10,22 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  ArrowLeft,
-  Clock,
-  FileText,
-  Truck,
-  CheckCircle,
-  AlertCircle,
-  Upload,
-  X,
-  ImageIcon,
-  Loader2,
-} from "lucide-react"
+import { ArrowLeft, Clock, FileText, Truck, CheckCircle, AlertCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { getOrderDetails, updateOrderStatus, type Order } from "@/lib/admin-service"
-import Image from "next/image"
-import { Input } from "@/components/ui/input"
 
 export default function OrderDetailsPage() {
   const params = useParams()
@@ -34,11 +19,6 @@ export default function OrderDetailsPage() {
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
-
-  const [isUploading, setIsUploading] = useState(false)
-  const [orderImages, setOrderImages] = useState<any[]>([])
-  const [previewImage, setPreviewImage] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (params.id) {
@@ -161,127 +141,6 @@ export default function OrderDetailsPage() {
       </div>
     )
   }
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files || files.length === 0) return
-
-    const file = files[0]
-    setIsUploading(true)
-
-    try {
-      // Önizleme için URL oluştur
-      const previewUrl = URL.createObjectURL(file)
-      setPreviewImage(previewUrl)
-
-      // Resmi sunucuya yükle
-      const formData = new FormData()
-      formData.append("image", file)
-
-      const response = await fetch("/api/admin/upload-order-image", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (!response.ok) {
-        throw new Error("Resim yüklenirken bir hata oluştu")
-      }
-
-      const data = await response.json()
-
-      if (data.success) {
-        // Add the image to the order
-        const addImageResponse = await fetch(`/api/orders/${order.id}/images`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            url: data.imageUrl,
-            description: "Sipariş resmi",
-          }),
-        })
-
-        if (!addImageResponse.ok) {
-          throw new Error("Resim siparişe eklenirken bir hata oluştu")
-        }
-
-        const addImageData = await addImageResponse.json()
-
-        // Add the new image to the state
-        setOrderImages([...orderImages, addImageData.image])
-
-        toast({
-          title: "Başarılı",
-          description: "Resim başarıyla yüklendi.",
-        })
-      } else {
-        throw new Error(data.error || "Resim yüklenirken bir hata oluştu")
-      }
-    } catch (error) {
-      console.error("Resim yükleme hatası:", error)
-      toast({
-        variant: "destructive",
-        title: "Hata",
-        description: "Resim yüklenirken bir hata oluştu.",
-      })
-      // Hata durumunda önizlemeyi temizle
-      setPreviewImage(null)
-    } finally {
-      setIsUploading(false)
-      // Dosya seçiciyi sıfırla
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""
-      }
-    }
-  }
-
-  const handleDeleteImage = async (imageId: string) => {
-    try {
-      const response = await fetch(`/api/orders/${order.id}/images/${imageId}`, {
-        method: "DELETE",
-      })
-
-      if (!response.ok) {
-        throw new Error("Resim silinirken bir hata oluştu")
-      }
-
-      // Remove the image from the state
-      setOrderImages(orderImages.filter((img) => img.id !== imageId))
-
-      toast({
-        title: "Başarılı",
-        description: "Resim başarıyla silindi.",
-      })
-    } catch (error) {
-      console.error("Resim silme hatası:", error)
-      toast({
-        variant: "destructive",
-        title: "Hata",
-        description: "Resim silinirken bir hata oluştu.",
-      })
-    }
-  }
-
-  useEffect(() => {
-    const fetchOrderImages = async () => {
-      try {
-        const response = await fetch(`/api/orders/${order.id}/images`)
-        if (!response.ok) {
-          throw new Error("Sipariş resimleri alınırken bir hata oluştu")
-        }
-
-        const data = await response.json()
-        setOrderImages(data.images || [])
-      } catch (error) {
-        console.error("Sipariş resimleri alınırken hata:", error)
-      }
-    }
-
-    if (order?.id) {
-      fetchOrderImages()
-    }
-  }, [order?.id])
 
   return (
     <div className="space-y-6">
@@ -410,86 +269,6 @@ export default function OrderDetailsPage() {
             <div className="space-y-1 text-right">
               <p className="text-sm font-medium text-muted-foreground">Toplam Tutar</p>
               <p className="text-2xl font-bold">{order.total_amount.toFixed(2)} ₺</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Sipariş Resimleri</CardTitle>
-          <CardDescription>Siparişe ait resimler (teslimat kanıtı, vb.)</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Input
-                ref={fileInputRef}
-                type="file"
-                id="image"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-              >
-                {isUploading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Yükleniyor...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Resim Yükle
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {previewImage && (
-              <div className="relative w-full max-w-md h-40 rounded-md overflow-hidden border">
-                <Image
-                  src={previewImage || "/placeholder.svg"}
-                  alt="Sipariş resmi önizleme"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              {orderImages.length === 0 ? (
-                <div className="col-span-full text-center p-8 border border-dashed rounded-md">
-                  <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-muted-foreground">Henüz resim eklenmedi</p>
-                </div>
-              ) : (
-                orderImages.map((image) => (
-                  <div key={image.id} className="relative group">
-                    <div className="relative aspect-square rounded-md overflow-hidden border">
-                      <Image src={image.url || "/placeholder.svg"} alt="Sipariş resmi" fill className="object-cover" />
-                    </div>
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDeleteImage(image.id)}
-                        className="absolute top-2 right-2"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    {image.description && (
-                      <p className="text-sm text-muted-foreground mt-1 truncate">{image.description}</p>
-                    )}
-                  </div>
-                ))
-              )}
             </div>
           </div>
         </CardContent>

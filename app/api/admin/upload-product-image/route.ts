@@ -1,18 +1,25 @@
 import { NextResponse } from "next/server"
 import { v4 as uuidv4 } from "uuid"
-import { writeFile } from "fs/promises"
+import { writeFile, mkdir } from "fs/promises"
 import { join } from "path"
-import { ensureUploadDir } from "@/lib/utils/ensure-upload-dir"
+import { existsSync } from "fs"
 
 // Resim yükleme için hedef dizin
-const UPLOAD_PATH = "uploads/products"
+const UPLOAD_DIR = join(process.cwd(), "public", "uploads", "products")
+
+// Dizinin var olduğundan emin ol
+async function ensureUploadDir() {
+  if (!existsSync(UPLOAD_DIR)) {
+    await mkdir(UPLOAD_DIR, { recursive: true })
+  }
+}
 
 export async function POST(request: Request) {
   try {
     const formData = await request.formData()
 
     // Dizinin var olduğundan emin ol
-    await ensureUploadDir(UPLOAD_PATH)
+    await ensureUploadDir()
 
     // Tek bir resim veya çoklu resim olabilir
     const images = formData.getAll("image") as File[]
@@ -29,14 +36,14 @@ export async function POST(request: Request) {
       // Benzersiz dosya adı oluştur
       const fileExt = image.name.split(".").pop()?.toLowerCase() || "jpg"
       const fileName = `${uuidv4()}.${fileExt}`
-      const filePath = join(process.cwd(), "public", UPLOAD_PATH, fileName)
+      const filePath = join(UPLOAD_DIR, fileName)
 
       // Dosyayı diske kaydet
       const buffer = Buffer.from(await image.arrayBuffer())
       await writeFile(filePath, buffer)
 
       // URL'yi listeye ekle (web'den erişilebilir path)
-      const imageUrl = `/${UPLOAD_PATH}/${fileName}`
+      const imageUrl = `/uploads/products/${fileName}`
       imageUrls.push(imageUrl)
     }
 
