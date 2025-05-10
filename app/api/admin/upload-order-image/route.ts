@@ -5,7 +5,7 @@ import { join } from "path"
 import { ensureUploadDir } from "@/lib/utils/ensure-upload-dir"
 
 // Resim yükleme için hedef dizin
-const UPLOAD_PATH = "uploads/categories"
+const UPLOAD_PATH = "uploads/orders"
 
 export async function POST(request: Request) {
   try {
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       imageUrl: imageUrl,
     })
   } catch (error) {
-    console.error("Kategori resmi yükleme hatası:", error)
+    console.error("Sipariş resmi yükleme hatası:", error)
     return NextResponse.json(
       {
         error: "Resim yüklenirken bir hata oluştu",

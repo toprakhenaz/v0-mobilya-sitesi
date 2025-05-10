@@ -61,8 +61,9 @@ export type Category = {
   id: number
   name: string
   slug: string
-  description?: string
-  image_url?: string
+  description?: string | null
+  image_url?: string | null
+  product_count?: number
 }
 
 // Ürün tipi
@@ -110,6 +111,7 @@ export async function adminLogin(
 // Get all categories
 export async function getCategories(searchTerm = ""): Promise<Category[]> {
   try {
+    // First get categories
     let query = supabase.from("categories").select("*")
 
     if (searchTerm) {
@@ -123,6 +125,8 @@ export async function getCategories(searchTerm = ""): Promise<Category[]> {
       throw new Error(error.message)
     }
 
+    // For now, return categories without product counts
+    // We'll implement a separate function if product counts are needed
     return data as Category[]
   } catch (error) {
     console.error("Kategoriler alınırken hata:", error)
@@ -133,7 +137,14 @@ export async function getCategories(searchTerm = ""): Promise<Category[]> {
 // Create a new category
 export async function createCategory(category: Omit<Category, "id">): Promise<Category | null> {
   try {
-    const { data, error } = await supabase.from("categories").insert([category]).select().single()
+    // Ensure image_url is properly handled
+    const processedCategory = {
+      ...category,
+      description: category.description || null,
+      image_url: category.image_url || null,
+    }
+
+    const { data, error } = await supabase.from("categories").insert([processedCategory]).select().single()
 
     if (error) {
       console.error("Kategori oluşturulurken hata:", error.message)
@@ -150,7 +161,14 @@ export async function createCategory(category: Omit<Category, "id">): Promise<Ca
 // Update a category
 export async function updateCategory(id: number, category: Partial<Category>): Promise<Category | null> {
   try {
-    const { data, error } = await supabase.from("categories").update(category).eq("id", id).select().single()
+    // Ensure image_url is properly handled
+    const processedCategory = {
+      ...category,
+      description: category.description === "" ? null : category.description,
+      image_url: category.image_url === "" ? null : category.image_url,
+    }
+
+    const { data, error } = await supabase.from("categories").update(processedCategory).eq("id", id).select().single()
 
     if (error) {
       console.error(`Kategori (ID: ${id}) güncellenirken hata:`, error.message)

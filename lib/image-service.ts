@@ -74,12 +74,23 @@ export async function saveProductImage(productId: number, url: string, isPrimary
 export async function getProductImages(productId: number) {
   try {
     // Try to get from database first
-    const { data, error } = await supabase.from("product_images").select("*").eq("product_id", productId)
+    const { data, error } = await supabase
+      .from("product_images")
+      .select("*")
+      .eq("product_id", productId)
+      .order("is_primary", { ascending: false })
 
     if (error) {
-      // If database error, fall back to file storage
       console.log("Database error when fetching product images, using fallback:", error)
       return await getProductImagesFromFile(productId)
+    }
+
+    // If no data or empty array, try fallback
+    if (!data || data.length === 0) {
+      const fileImages = await getProductImagesFromFile(productId)
+      if (fileImages && fileImages.length > 0) {
+        return fileImages
+      }
     }
 
     return data
@@ -93,44 +104,55 @@ export async function getProductImages(productId: number) {
 // Set primary image
 export async function setPrimaryImage(imageId: number, productId: number) {
   try {
-    // Try database first
+    // First, reset all images for this product to not primary
     const { error } = await supabase.from("product_images").update({ is_primary: false }).eq("product_id", productId)
 
     if (error) {
-      throw new Error("Database error when updating primary image")
+      console.error("Database error when updating primary image:", error)
+      // Try file fallback
+      return await setPrimaryImageInFile(imageId, productId)
     }
 
+    // Then set the selected image as primary
     const { error: updateError } = await supabase.from("product_images").update({ is_primary: true }).eq("id", imageId)
 
     if (updateError) {
-      throw new Error("Database error when setting primary image")
+      console.error("Database error when setting primary image:", updateError)
+      // Try file fallback
+      return await setPrimaryImageInFile(imageId, productId)
     }
 
     return true
   } catch (error) {
+    console.error("Error setting primary image:", error)
     // Fall back to file storage
-    try {
-      if (!fs.existsSync(PRODUCT_IMAGES_FILE)) {
-        return false
-      }
+    return await setPrimaryImageInFile(imageId, productId)
+  }
+}
 
-      const fileData = await readFile(PRODUCT_IMAGES_FILE, "utf8")
-      let images = JSON.parse(fileData || "[]")
-
-      // Reset all images for this product to not primary
-      images = images.map((img: any) => {
-        if (img.product_id === productId) {
-          return { ...img, is_primary: img.id === imageId }
-        }
-        return img
-      })
-
-      await fs.promises.writeFile(PRODUCT_IMAGES_FILE, JSON.stringify(images, null, 2), "utf8")
-      return true
-    } catch (fileError) {
-      console.error("Error updating primary image in file:", fileError)
+// Add a new function to set primary image in file
+async function setPrimaryImageInFile(imageId: number, productId: number) {
+  try {
+    if (!fs.existsSync(PRODUCT_IMAGES_FILE)) {
       return false
     }
+
+    const fileData = await readFile(PRODUCT_IMAGES_FILE, "utf8")
+    let images = JSON.parse(fileData || "[]")
+
+    // Reset all images for this product to not primary
+    images = images.map((img: any) => {
+      if (img.product_id === productId) {
+        return { ...img, is_primary: img.id === imageId }
+      }
+      return img
+    })
+
+    await fs.promises.writeFile(PRODUCT_IMAGES_FILE, JSON.stringify(images, null, 2), "utf8")
+    return true
+  } catch (fileError) {
+    console.error("Error updating primary image in file:", fileError)
+    return false
   }
 }
 
